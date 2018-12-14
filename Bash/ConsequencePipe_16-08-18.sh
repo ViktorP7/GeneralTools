@@ -91,40 +91,40 @@ do
 	rm $PairTwo
 	
 	samtools view -b $Samfile > $Bamfile
-#	samtools sort $Bamfile -o $SortedBam
-#	samtools index $SortedBam
-#	samtools rmdup $SortedBam $NDupBam
+	samtools sort $Bamfile -o $SortedBam
+	samtools index $SortedBam
+	samtools rmdup $SortedBam $NDupBam
 
 	# Progress
-#	echo -e "\e[1;31m Alignment complete, creating bcf file... \e[0m"
+	echo -e "\e[1;31m Alignment complete, creating bcf file... \e[0m"
 
 	# Variable to store bcf file
-#	BcfFile=$PairID".bcf"
+	BcfFile=$PairID".bcf"
 
 	# Create a bcf file with samtools
-#	samtools mpileup --adjust-MQ 5 --min-MQ 5 --min-BQ 5 --uncompressed --fasta-ref $PathToReference $NDupBam > $BcfFile
+	samtools mpileup --adjust-MQ 5 --min-MQ 5 --min-BQ 5 --uncompressed --fasta-ref $PathToReference $NDupBam > $BcfFile
 
 	# Progress
-#	echo -e "\e[1;31m Bcf file created, calling variants... \e[0m"
+	echo -e "\e[1;31m Bcf file created, calling variants... \e[0m"
 
 	# Initialise variable to store vcf files
-#	VcfFile=$PairID".vcf"
-#	ConsequenceFile=$PairID"_csq.vcf"
+	VcfFile=$PairID".vcf"
+	ConsequenceFile=$PairID"_csq.vcf"
 
 	# Create a vcf with bcftools
-#	bcftools call $BcfFile --ploidy 1 --multiallelic-caller --output-type v --variants-only > $VcfFile
+	bcftools call $BcfFile --ploidy 1 --multiallelic-caller --output-type v --variants-only > $VcfFile
 
 	# Progress
-#	echo -e "\e[1;31m Vcf file created, calling consequences... \e[0m"
+	echo -e "\e[1;31m Vcf file created, calling consequences... \e[0m"
 
 	# Run bcftools csq to create a vcf file with the consequence calls
-#	bcftools csq --fasta-ref $PathToReference --gff-annot $PathToAnnotations $VcfFile -Ov -o $ConsequenceFile
-#
+	bcftools csq --fasta-ref $PathToReference --gff-annot $PathToAnnotations $VcfFile -Ov -o $ConsequenceFile
+
 	# Zip the vcf files up
-#	pigz $VcfFile
+	pigz $VcfFile
 
 	# Progress
-#	echo -e "\e[1;31m Pair $PairID fully processed, moving onto next... \e[0m"
+	echo -e "\e[1;31m Pair $PairID fully processed, moving onto next... \e[0m"
 
 done
 	
