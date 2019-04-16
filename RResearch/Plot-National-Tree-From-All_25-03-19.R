@@ -1,4 +1,6 @@
-# 25-03-19 modified for extra isolates
+# 11/03/19 modified for a RAxML tree input file
+# 25-03-19 modified for extra isolates, function to drop international tips
+
 # Load packages
 library(ape)
 library(geiger)
@@ -44,7 +46,7 @@ plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01,
 nodelabels()
 tiplabels()
 
-pdf("BigCHASTree2.pdf", width=20, height=20)
+pdf("IRISHMarch2018Tree2.pdf", width=20, height=20)
 
 # Root the tree at K10 
 rootree <- root(TheTree, "MAPK10")
@@ -61,32 +63,29 @@ noSheepTree <- drop.tip(droppedTree, dropSheep)
 dropDist <- c(60:63)
 distDroppedTree <- drop.tip(noSheepTree, dropDist)
 
+# Get rid of the non-irish isolates
+dropper <- toDropInternationalTips(distDroppedTree$tip.label)
+irishOnlytree <- drop.tip(distDroppedTree, dropper)
+
 # Convert branch lengths to SNP values
-distDroppedTree$edge.length <- distDroppedTree$edge.length * 49434
+irishOnlytree$edge.length <- irishOnlytree$edge.length * 49434
 
 # Get the floored values o the lengths
-flooredSNPs <- floor(distDroppedTree$edge.length)
+flooredSNPs <- floor(irishOnlytree$edge.length)
 
 # Get the colours
-tipColours <- makeRegionColours(distDroppedTree$tip.label)
-
+tipColours <- makeRegionColours(irishOnlytree$tip.label)
 
 # Plot the no sheep tree
-plot.phylo(distDroppedTree, edge.width = 2, font = 1, label.offset = 0.2, 
+plot.phylo(irishOnlytree, edge.width = 0.2, font = 1, label.offset = 0.2, 
            tip.color = tipColours,
-           align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE,
-           edge.color = "darkgrey")
-#tiplabels()
-#Add shaped tip labels
-tiplabels(pch = 16, col = tipColours, cex = 3)
+           align.tip.label = FALSE, type="phylogram", cex = 1)
 
 # Add the SNP scale
-add.scale.bar(cex = 4.0)
+add.scale.bar(cex = 3.0)
 
-# Add a legend
-legend("bottomright", legend = c("Irish", "European", "Rest of World", "Unknown"), 
-       text.col = c("green", "blue", "red", "black"), bty = "n", cex = 3.0)
-
+# Add SNP lengths to each edge
+#edgelabels(text = flooredSNPs, adj = c(0.5, -0.25), frame = "none", cex = 0.5)
 
 dev.off()
 
@@ -181,49 +180,6 @@ getCVRLLabels <- function(isoTable, TheTree){
   return(nameVector)
 }
 
-# Function to generate colours based on species
-makeSpeciesColours <- function(realNames){
-  
-  # Copy the name vector
-  colourVec <- realNames
-  
-  # Loop thru each name
-  for(index in 1:length(colourVec)){
-    
-    # Check if part of a word is in the name and assign a colour
-    if(grepl("Human", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Cow", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "green"
-    } else if(grepl("Bison", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "green" 
-    } else if(grepl("Sheep", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Goat", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Moufflon", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Deer", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "orange"
-    } else if(grepl("Passaged", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "grey"
-    } else {
-      
-      colourVec[index] <- "black"
-    }
-  }
-  
-  return(colourVec)
-}
-
 # Function to generate colours based on region
 makeRegionColours <- function(realNames){
   
@@ -234,76 +190,152 @@ makeRegionColours <- function(realNames){
   for(index in 1:length(colourVec)){
     
     # Check if part of a word is in the name and assign a colour
-    if(grepl("Ireland", colourVec[index]) == TRUE){
+    if(grepl("NIreland", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "red"
+    } else if(grepl("Louth", colourVec[index]) == TRUE){
       
       colourVec[index] <- "green"
-    } else if(grepl("UK", colourVec[index]) == TRUE){
+    } else if(grepl("Cavan", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "red" 
+    } else if(grepl("Ireland", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "orange"
+    } else if(grepl("Leitrim", colourVec[index]) == TRUE){
       
       colourVec[index] <- "blue"
-    } else if(grepl("Italy", colourVec[index]) == TRUE){
+    } else if(grepl("Clare", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue" 
-    } else if(grepl("Spain", colourVec[index]) == TRUE){
+      colourVec[index] <- "orange"
+    } else if(grepl("Wexford", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue"
-    } else if(grepl("France", colourVec[index]) == TRUE){
+      colourVec[index] <- "green"
+    } else if(grepl("Limerick", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue"
-    } else if(grepl("Scotland", colourVec[index]) == TRUE){
+      colourVec[index] <- "orange"
+    } else if(grepl("Wicklow", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue"
-    } else if(grepl("England", colourVec[index]) == TRUE){
+      colourVec[index] <- "green"
+    } else if(grepl("Cork", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue"
-    } else if(grepl("Wales", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Germany", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Netherlands", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Czech", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Greece", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Norway", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("NewZealand", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("USA", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Canada", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Venezuela", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("India", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Argentina", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("ERR0", colourVec[index]) == TRUE){
+      colourVec[index] <- "orange"
+    } else if(grepl("NA", colourVec[index]) == TRUE){
       
       colourVec[index] <- "black"
-    } else if(grepl("MAPK10", colourVec[index]) == TRUE){
+    } else if(grepl("Kerry", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "orange"
+    } else if(grepl("Donegal", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "red"
+    } else if(grepl("CIT", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "orange"
+    } else if (grepl("MAPK10", colourVec[index]) == TRUE){
       
       colourVec[index] <- "purple"
-    } else {
+    } else if (grepl("Dublin", colourVec[index]) == TRUE){
       
       colourVec[index] <- "green"
+    } else if (grepl("Laois", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "green"
+    } else if (grepl("Kilkenny", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "green"
+    } else if (grepl("Meath", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "green"
+    } else if (grepl("Galway", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "blue"
+    } else if (grepl("Tipperary", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "orange"
+    } else if (grepl("Roscommon", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "blue"
+    } else {
+      
+      colourVec[index] <- "black"
     }
+    
   }
   
   return(colourVec)
+}
+
+# Function to create vector with international tips to drop
+toDropInternationalTips <- function(tiplabel){
+  
+  # Create vector to store index values of tips to be dropped
+  dropVector <- c()
+  
+  # Loop thru tip labels and drop as required
+  for(index in 1:length(tiplabel)){
+    
+    # Check if part of a word is in the name and assign a colour
+    if(grepl("UK", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Italy", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index) 
+    } else if(grepl("Spain", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("France", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Scotland", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("England", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Wales", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Germany", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Netherlands", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Czech", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Greece", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Norway", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("NewZealand", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("USA", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Canada", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Venezuela", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("India", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Argentina", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("ERR0", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } 
+  }
+  return(dropVector)
 }
 # To get the scale bar, times all the edge lengths by the length of sequences
 # This can be found in the fasta file at the top

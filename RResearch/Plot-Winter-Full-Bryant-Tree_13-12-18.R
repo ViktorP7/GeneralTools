@@ -1,4 +1,5 @@
 # 11/03/19 modified for a RAxML tree input file
+# 25-03-19 modified for extra isolates
 
 # Load packages
 library(ape)
@@ -8,7 +9,7 @@ library(phytools)
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/CVRL-MAP-Batch-Jan.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_06-03-19"
+pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_18-03-19"
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso,
@@ -45,25 +46,25 @@ plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01,
 nodelabels()
 tiplabels()
 
-pdf("CombinedDecember2018Tree5.pdf", width=20, height=20)
+pdf("CombinedMarch2018Tree4.pdf", width=20, height=20)
 
 # Root the tree at K10 
 rootree <- root(TheTree, "MAPK10")
 
 # Drop tips
-dropNumbers <- c(95,96)
+dropNumbers <- c(61:74)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
 # Drop the sheep
-dropSheep <- c(94:117)
-noSheepTree <- drop.tip(rootree, dropSheep)
+dropSheep <- c(64:77)
+noSheepTree <- drop.tip(droppedTree, dropSheep)
 
 # Drop the distant ones
-dropDist <- c(93:100)
+dropDist <- c(60:63)
 distDroppedTree <- drop.tip(noSheepTree, dropDist)
 
 # Convert branch lengths to SNP values
-distDroppedTree$edge.length <- distDroppedTree$edge.length * 40238
+distDroppedTree$edge.length <- distDroppedTree$edge.length * 49434
 
 # Get the floored values o the lengths
 flooredSNPs <- floor(distDroppedTree$edge.length)
@@ -74,13 +75,13 @@ tipColours <- makeRegionColours(distDroppedTree$tip.label)
 # Plot the no sheep tree
 plot.phylo(distDroppedTree, edge.width = 0.2, font = 1, label.offset = 0.2, 
            tip.color = tipColours,
-           align.tip.label = FALSE, type="phylogram", cex = 0.5)
+           align.tip.label = FALSE, type="phylogram", cex = 0.65)
 
 # Add the SNP scale
-add.scale.bar(cex = 1.0)
+add.scale.bar(cex = 3)
 
 # Add SNP lengths to each edge
-edgelabels(text = flooredSNPs, adj = c(0.5, -0.25), frame = "none", cex = 0.5)
+#edgelabels(text = flooredSNPs, adj = c(0.5, -0.25), frame = "none", cex = 0.5)
 
 dev.off()
 

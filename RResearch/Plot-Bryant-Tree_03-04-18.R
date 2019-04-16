@@ -4,8 +4,8 @@ library(geiger)
 library(phytools)
 
 # Set path variables
-pathIso <- "path/to/csv"
-path <- "path/to/tree"
+pathIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
+path <- "C:/Users/UCD/Documents/Lab/Cork MAP/Bryant & Ahlstrom/bryanttree2.tree"
 
 # Read in table of isolates
 isoTable <- read.table(pathIso,
@@ -24,10 +24,10 @@ realNames <- getLabels(isoTable, TheTree)
 TheTree$tip.label <- realNames
 
 # Plot the tree
-plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01, cex = 0.4)
-nodelabels(cex = 0.4)
+plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01, cex = 0.1)
+nodelabels(cex = 0.1)
 
-pdf("tree.pdf", width=20, height=20)
+pdf("bryanttree2.pdf", width=20, height=20)
 
 # Root the tree at node 205 - like in the paper
 tree <- root(TheTree, node=205)
@@ -55,18 +55,17 @@ flooredSNPs <- floor(droppedTree$edge.length)
 
 # Plot the new tree
 plot.phylo(droppedTree, edge.width = 0.2, font = 1, label.offset = 0.001,
-           cex=0.7, align.tip.label = TRUE, type="phylogram", tip.color = tipColours)
-legend("left", legend=c("Colouring based on host","Species.Location.IsolateNo.INMV", 
-                        "Human", "Deer", "Cattle/Bovidae", "Sheep/Capridae",
-                        "Passaged", "Other", "Scale shows no. SNPs"), text.col = c("Black","Black", "Red",
+           cex=1, type="phylogram", tip.color = tipColours)
+legend("left", legend=c( "Human", "Deer", "Cattle/Bovidae", "Sheep/Capridae",
+                        "Passaged", "Other"), text.col = c("Red",
                                                            "Orange", "Green",
-                                                           "Blue", "Grey", "Black", "Black"),
-       bty = "n", cex = 1)
+                                                           "Blue", "Grey", "Black"),
+       bty = "n", cex = 3.0)
 
-add.scale.bar()
+add.scale.bar(cex = 4.0)
 
 # Add SNP lengths to each edge
-edgelabels(text = flooredSNPs, adj = c(0.5, -0.25), bg = "yellow", cex = 0.4)
+#edgelabels(text = flooredSNPs, adj = c(0.5, -0.25), bg = "yellow", cex = 0.4)
 
 dev.off()
 

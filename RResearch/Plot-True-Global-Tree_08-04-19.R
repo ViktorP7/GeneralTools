@@ -1,7 +1,9 @@
+# 11/03/19 modified for a RAxML tree input file
 # 25-03-19 modified for extra isolates
+# 08-04-19 modified for better root and to find VNTR group distances
+
 # Load packages
 library(ape)
-library(geiger)
 library(phytools)
 
 # Set path variables
@@ -40,53 +42,60 @@ TheTree$tip.label <- realNames
 
 # Plot the tree
 plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01, 
-           show.tip.label = FALSE)
-nodelabels()
+           show.tip.label = TRUE, cex = 0.1)
+nodelabels(cex = 0.05, frame = "none")
 tiplabels()
 
-pdf("BigCHASTree2.pdf", width=20, height=20)
+pdf("CombinedMarch2018Tree4.pdf", width=20, height=20)
 
-# Root the tree at K10 
-rootree <- root(TheTree, "MAPK10")
+# Root the tree at 332 - ancestor rooted in the Bryant paper
+rootree <- root(TheTree, node = 332)
 
-# Drop tips
-dropNumbers <- c(61:74)
+# Drop tips for far away ancestors (silvaticum and hominissius)
+dropNumbers <- c(69,70)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
-# Drop the sheep
-dropSheep <- c(64:77)
-noSheepTree <- drop.tip(droppedTree, dropSheep)
+# Extract the clade that doesn't have all the distant sheep
+extractedTree <- extract.clade(droppedTree, node = 319)
 
-# Drop the distant ones
-dropDist <- c(60:63)
-distDroppedTree <- drop.tip(noSheepTree, dropDist)
+# Extract further
+extractTree <- extract.clade(extractedTree, node = 227)
+
+# Drop the ERR0s
+dropErr <- c(57,58,100)
+noErrTree <- drop.tip(extractTree, dropErr)
 
 # Convert branch lengths to SNP values
-distDroppedTree$edge.length <- distDroppedTree$edge.length * 49434
+noErrTree$edge.length <- noErrTree$edge.length * 49434
 
 # Get the floored values o the lengths
-flooredSNPs <- floor(distDroppedTree$edge.length)
+flooredSNPs <- floor(noErrTree$edge.length)
 
 # Get the colours
-tipColours <- makeRegionColours(distDroppedTree$tip.label)
-
+tipColours <- makeRegionColours(noErrTree$tip.label)
 
 # Plot the no sheep tree
-plot.phylo(distDroppedTree, edge.width = 2, font = 1, label.offset = 0.2, 
+plot.phylo(noErrTree, edge.width = 0.2, font = 1, label.offset = 0.2, 
            tip.color = tipColours,
-           align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE,
-           edge.color = "darkgrey")
-#tiplabels()
-#Add shaped tip labels
-tiplabels(pch = 16, col = tipColours, cex = 3)
+           align.tip.label = FALSE, type="phylogram", cex = 0.2)
 
 # Add the SNP scale
-add.scale.bar(cex = 4.0)
+add.scale.bar(cex = 3)
+
+# Plot international tree as a fan
+plot.phylo(noErrTree, edge.width = 1, font = 1, label.offset = 0.2, 
+           tip.color = tipColours, edge.color = "darkgrey",
+           align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
+
+#Add shaped tip labels
+tiplabels(pch = 18, col = tipColours,  cex = 1)
+
+# Add the SNP scale
+add.scale.bar(cex = 1)
 
 # Add a legend
-legend("bottomright", legend = c("Irish", "European", "Rest of World", "Unknown"), 
-       text.col = c("green", "blue", "red", "black"), bty = "n", cex = 3.0)
-
+legend("bottomright", legend = c("Ireland", "Europe", "Rest Of World", "Unknown"), 
+       text.col = c("green", "blue", "red", "black"), bty = "n", cex = 0.5)
 
 dev.off()
 
@@ -293,10 +302,10 @@ makeRegionColours <- function(realNames){
       colourVec[index] <- "red"
     } else if(grepl("ERR0", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "black"
+      colourVec[index] <- "grey"
     } else if(grepl("MAPK10", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "purple"
+      colourVec[index] <- "grey"
     } else {
       
       colourVec[index] <- "green"
@@ -305,7 +314,3 @@ makeRegionColours <- function(realNames){
   
   return(colourVec)
 }
-# To get the scale bar, times all the edge lengths by the length of sequences
-# This can be found in the fasta file at the top
-# Example - rooted$edge.length <- rooted$edge.length * 671
-# Then use the add.scale.bar() command

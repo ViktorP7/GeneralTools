@@ -39,19 +39,20 @@ plotDNAvODinBeadsvPhenolvCTAB <- function(extractionTable, concentrationThreshol
   
   # Plot OD600 reading against total DNA concentration
   plot(x=extractionTable[, "OD600nm"], y=extractionTable[, "Total DNA ng"], # Provide X and Y coordinates
-       main="OD600nm vs. DNA Concentration", # Set title
+       main="DNA Extracted from 500ul liquid", # Set title
        xlab="OD600nm", # Label X axis
        ylab="Total DNA (ng)", # Label y axis
        log = "y", # make y axis logarithmic
+       xaxt = "n",
        las=1, # Change angle of tick labels to be horizontal
        bty="n", # Remove box around plot
-       col=ifelse(grepl("ctab", extractionTable[,"Sample ID"]) , rgb(0,1,0, 0.5),
-                  ifelse(grepl("beads", extractionTable[,"Sample ID"]), rgb(1,0,0,0.5), rgb(0,0,1,0.5))),
+       col=ifelse(grepl("ctab", extractionTable[,"Sample ID"]) , rgb(0,1,0, 1),
+                  ifelse(grepl("beads", extractionTable[,"Sample ID"]), rgb(1,0,0,1), rgb(0,0,1,1))),
        pch=ifelse(grepl("ctab", extractionTable[,"Sample ID"]) , 0,
                   ifelse(grepl("beads", extractionTable[,"Sample ID"]), 1, 2))) 
   
   # Change the x axis scale
-  axis(side=1, at=seq(0,2,by=0.1))
+  axis(side=1, at=seq(0,2,by=0.1), las = 2)
   
   # Add a legend
   legend("bottomright", # Set the position of the legend
@@ -75,8 +76,8 @@ plotQualityinBeadsvPhenolVCTAB <- function(extractionTable){
        ylab="Absorbance ratio at 260/230nm", # Label y axis
        las=1, # Change angle of tick labels to be horizontal
        bty="n", # Remove box around plot
-       col=ifelse(grepl("ctab", extractionTable[,"Sample ID"]) , rgb(0,1,0, 0.5),
-                  ifelse(grepl("beads", extractionTable[,"Sample ID"]), rgb(1,0,0,0.5), rgb(0,0,1,0.5))),
+       col=ifelse(grepl("ctab", extractionTable[,"Sample ID"]) , rgb(0,1,0, 1),
+                  ifelse(grepl("beads", extractionTable[,"Sample ID"]), rgb(1,0,0,1), rgb(0,0,1,1))),
        pch=ifelse(grepl("ctab", extractionTable[,"Sample ID"]) , 0,
                   ifelse(grepl("beads", extractionTable[,"Sample ID"]), 1, 2)))
   
@@ -105,4 +106,13 @@ plotQualityinBeadsvPhenolVCTAB <- function(extractionTable){
   # Draw a box to highlight acceptable bounds for 260/230
   rect(xleft = 1.75, ybottom = 1.85, xright = 2.05, ytop = 2.25, border = "grey")
   
+}
+
+# Function to plot quality as boxplots
+plotQualityBoxplots <- function(extractionTable){
+  
+  # Do a boxplot
+  boxplot(extractionTable[grepl("ctab", extractionTable[,"Sample ID"]), 
+          grepl("beads", extractionTable[,"Sample ID"]),
+          grepl("phenol", extractionTable[,"Sample ID"]))
 }
