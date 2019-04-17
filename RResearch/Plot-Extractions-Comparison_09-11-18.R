@@ -1,5 +1,6 @@
 # Get necessary packages
 library(dplyr)
+library(scales)
 
 # Set path and read in the file
 path <- "C:/Users/UCD/Documents/Lab/Nanodrop/extraction-comparison_9-11-18.csv"
@@ -33,6 +34,15 @@ plotQualityinBeadsvPhenolVCTAB(filteredTable)
 axis(side=1, at=seq(1.5,2.5,by=0.1))
 axis(side=2, at=seq(1.5,2.5,by=0.1), las=1)
 
+# Plot boxplots of 260/280 that passed criteria 200ng
+plotQualityBoxplots(filteredTable, "260/280")
+
+# Plot boxplots of 260/230 that passed criteria 200ng
+plotQualityBoxplots(filteredTable, "260/230")
+
+###############
+###FUNCTIONS###
+###############
 # Function to plot DNA vs OD
 plotDNAvODinBeadsvPhenolvCTAB <- function(extractionTable, concentrationThreshold){
   
@@ -91,28 +101,41 @@ plotQualityinBeadsvPhenolVCTAB <- function(extractionTable){
   
   
   # Add in lines for inner thresholds
-  abline(h=c(2,2.2), v=c(1.8, 2.0), 
+  abline(v=c(1.8, 2.0), 
          col="black", # Set the colour of the line
          lty=2) # Make the line dashed
   
   # Add in lines for outer thresholds
-  abline(h=c(1.85,2.25), v=c(1.75, 2.05), 
-         col="grey", # Set the colour of the line
-         lty=2) # Make the line dashed
+  #abline(h=c(1.85,2.25), v=c(1.75, 2.05), 
+  #       col="grey", # Set the colour of the line
+  #       lty=2) # Make the line dashed
   
   # Draw a box to highlight desired quality
-  rect(xleft = 1.8, ybottom = 2, xright = 2, ytop = 2.2)
+  #rect(xleft = 1.8, ybottom = 2, xright = 2, ytop = 2.2)
   
   # Draw a box to highlight acceptable bounds for 260/230
-  rect(xleft = 1.75, ybottom = 1.85, xright = 2.05, ytop = 2.25, border = "grey")
+  #rect(xleft = 1.75, ybottom = 1.85, xright = 2.05, ytop = 2.25, border = "grey")
   
 }
 
 # Function to plot quality as boxplots
-plotQualityBoxplots <- function(extractionTable){
+plotQualityBoxplots <- function(extractionTable, ratio){
   
   # Do a boxplot
-  boxplot(extractionTable[grepl("ctab", extractionTable[,"Sample ID"]), 
-          grepl("beads", extractionTable[,"Sample ID"]),
-          grepl("phenol", extractionTable[,"Sample ID"]))
+  boxplot(extractionTable[grep("ctab", extractionTable[,"Sample ID"]),ratio], 
+          extractionTable[grep("beads", extractionTable[,"Sample ID"]),ratio],
+          extractionTable[grep("phenol", extractionTable[,"Sample ID"]),ratio],
+          names = c("CTAB", "Beads", "Phenol"),
+          main = paste(ratio, "quality ratios for DNA methods"),
+          ylab = paste(ratio, "absorbance ratio"))
+  
+  stripchart(extractionTable[grep("ctab", extractionTable[,"Sample ID"]),ratio],
+             add = TRUE, at = 1, col = alpha("green", 0.5), 
+             pch = 0, vertical = TRUE, method = "jitter")
+  stripchart(extractionTable[grep("beads", extractionTable[,"Sample ID"]),ratio],
+             add = TRUE, at = 2, col = alpha("red", 0.5), 
+             pch = 1, vertical = TRUE, method = "jitter")
+  stripchart(extractionTable[grep("phenol", extractionTable[,"Sample ID"]),ratio],
+             add = TRUE, at = 3, col = alpha("blue", 0.5), 
+             pch = 2, vertical = TRUE, method = "jitter")
 }
