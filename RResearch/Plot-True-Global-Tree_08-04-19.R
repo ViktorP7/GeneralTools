@@ -91,11 +91,11 @@ plot.phylo(noErrTree, edge.width = 1, font = 1, label.offset = 0.2,
 tiplabels(pch = 18, col = tipColours,  cex = 1)
 
 # Add the SNP scale
-add.scale.bar(cex = 1)
+add.scale.bar(x=2,y=-140)
 
 # Add a legend
 legend("bottomright", legend = c("Ireland", "Europe", "Rest Of World", "Unknown"), 
-       text.col = c("green", "blue", "red", "black"), bty = "n", cex = 0.5)
+       text.col = c("green", "blue", "red", "black"), bty = "n", cex = 0.7)
 
 dev.off()
 
