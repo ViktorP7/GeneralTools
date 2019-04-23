@@ -1,8 +1,8 @@
 # Load libraries/packages
-library(xlsx)
+library(openxlsx)
 
 # Set path variable
-path <- "path/to/tsv"
+path <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/pipetest/ComCsq_2018-08-28.tsv"
 
 # Read in table of isolates
 csqTable <- read.table(path,
@@ -14,8 +14,11 @@ csqTable <- read.table(path,
 # Remove the empty bogey column
 csqTable <- csqTable[,-length(colnames(csqTable))]
 
-# Create variable to store how many NAs to look for 
-sumNAs <- 3
+# Get the consequence frequencies including fails
+csqFreqsWithFails <- findCsqFreqs(csqTable, FALSE)
+
+# Get the consequence freqs excluding fails
+csqFreqsNoFails <- findCsqFreqs(csqTable, TRUE)
 
 # Get unique consequences
 uniqueCsqs <- findCommonCsqs(csqTable, 3)
@@ -64,9 +67,29 @@ justCITShared <- justTwoSharedCsqs[,-c(3,4)]
 justCITShared <- justCITShared[-which(is.na(justCITShared$`CIT-MAP_csq.vcf`) &
                                 is.na(justCITShared$`CITP-MAP_csq.vcf`)),]
 
+# Merge the CIT shared and unique frames
+mergedCITFrame <- rbind(justCITShared, justCITUniques)
+
+# Find the proportions of consequences for consequences unique to CITs inc. fails
+CITFreqsWithFails <- findCsqFreqs(mergedCITFrame, FALSE)
+CITFreqsNoFails <- findCsqFreqs(mergedCITFrame, TRUE)
+
+# Convert to proportions
+csqPropsWithFails <- convertToProp(csqFreqsWithFails)
+csqPropsNoFails <- convertToProp(csqFreqsNoFails)
+CITPropsWithFails <- convertToProp(CITFreqsWithFails)
+CITPropsNoFails <- convertToProp(CITFreqsNoFails)
+
+# Plot barplot to show overlap of overall consequences and selected consequences
+barplot(as.numeric(csqPropsNoFails[1:10,5]), col = "red", 
+        ylab = "Proportion", names.arg = csqPropsNoFails[1:10,1], las = 2, 
+        cex.names = 0.6)
+barplot(as.numeric(CITPropsNoFails[1:10,3]), col = "blue", add = T, yaxt = "n")
+
 # Write things to files
 write.xlsx(justCITUniques, "CITUniquesLenient.xlsx")
 write.xlsx(justCITShared, "CITSharedLenient.xlsx")
+write.xlsx(mergedCITFrame, "MergedCITLenient.xlsx")
 #############
 ##FUNCTIONS##
 #############
@@ -108,4 +131,88 @@ findCommonCsqs <- function(csqTable, sumNAs){
   }
   
   return(filteredFrame)
+}
+
+# Function to record frequency of consequences present for each isolate
+findCsqFreqs <- function(csqTable, failcheck){
+  
+  # Create matrix to store results
+  resultMatrix <- matrix(data = 0, nrow = 11, ncol = ncol(csqTable), 
+                         dimnames = list(c(), c("Type", 
+                                           names(csqTable[2:ncol(csqTable)]))))
+  
+  # Fill in the type column
+  resultMatrix[,1] <- c("None", "missense", "frameshift",
+                        "inframe_deletion", "synonymous",
+                        "inframe_insertion", "stop_gained",
+                        "stop_lost&frameshift", "stop_lost",
+                        "stop_retained", "Sumtotal")
+  
+  # Loop thru the input dataframe by column
+  for(col in 2:ncol(csqTable)){
+    
+    # Loop thru the rows of the current column
+    for(row in 1:nrow(csqTable)){
+      
+      # Check if is na or one of the types
+      if(is.na(csqTable[row,col]) == TRUE){
+        
+        next
+      
+      } else {
+        
+        # Run a for loop thru the types of consequence
+        for(type in 1:nrow(resultMatrix)){
+          
+          # Check if matches 
+          if(grepl(resultMatrix[type,1], csqTable[row, col]) == TRUE){
+            
+            # Check if failchecker enabled
+            if(failcheck == TRUE){
+              
+              if(grepl("FAIL", csqTable[row, col]) == TRUE){
+                
+                next
+              } else{
+                
+                resultMatrix[type, col] <- as.numeric(resultMatrix[type, col]) + 1
+                
+              }
+            } else{
+              
+              resultMatrix[type, col] <- as.numeric(resultMatrix[type, col]) + 1
+              
+            }
+          }
+        }
+      }
+    }
+  }
+  
+  # Tally the results at the end
+  for(isolate in 2:ncol(resultMatrix)){
+    
+    resultMatrix[11,isolate] <- sum(as.numeric(resultMatrix[,isolate]))
+  }
+  
+  return(resultMatrix)
+}
+
+# Function to convert to proportions
+convertToProp <- function(freqtable){
+  
+  # Create a result matrix to match the input
+  propTable <- freqtable
+  
+  # Loop thru the columns
+  for(col in 2:ncol(freqtable)){
+    
+    # Loop thru each row
+    for(row in 1:nrow(freqtable)){
+      
+      # Do the conversion
+      propTable[row,col] <- round(as.numeric(freqtable[row,col]) / as.numeric(freqtable[11,col]) * 100, digits = 2)
+    }
+  }
+  return(propTable)
 }
