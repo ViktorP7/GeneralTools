@@ -1,5 +1,6 @@
 # Load libraries/packages
 library(openxlsx)
+library(scales)
 
 # Set path variable
 path <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/pipetest/ComCsq_2018-08-28.tsv"
@@ -81,10 +82,22 @@ CITPropsWithFails <- convertToProp(CITFreqsWithFails)
 CITPropsNoFails <- convertToProp(CITFreqsNoFails)
 
 # Plot barplot to show overlap of overall consequences and selected consequences
-barplot(as.numeric(csqPropsNoFails[1:10,5]), col = "red", 
-        ylab = "Proportion", names.arg = csqPropsNoFails[1:10,1], las = 2, 
-        cex.names = 0.6)
-barplot(as.numeric(CITPropsNoFails[1:10,3]), col = "blue", add = T, yaxt = "n")
+x=barplot(as.numeric(csqPropsNoFails[1:10,5]), col = "red", 
+        ylab = "Proportion (%)", names.arg = csqPropsNoFails[1:10,1], las = 2, 
+        cex.names = 0.6, main = "Proportions of Consequences for CIT", xaxt = "n")
+barplot(as.numeric(CITPropsNoFails[1:10,3]), col = alpha("blue", 0.5),
+        add = T, yaxt = "n")
+
+# Add legend
+legend("right", legend = c("Differences from Ref. K10",
+                           "Differences from Bryant Isolates",
+                           "Overlap"),
+       text.col = c("Red", alpha("Blue", 0.5), "Purple"),
+       bty = "n", cex = 0.8)
+
+# Add slanted labels
+text(x[,1], -0.7, srt = 45, adj= 1, 
+     xpd = TRUE, labels = csqPropsNoFails[1:10,1] , cex=0.8)
 
 # Write things to files
 write.xlsx(justCITUniques, "CITUniquesLenient.xlsx")
