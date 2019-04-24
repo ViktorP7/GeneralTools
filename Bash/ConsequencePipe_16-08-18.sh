@@ -4,6 +4,10 @@
 # Contains adapted code from ProcessRawReads_09-08-18 by Joe Crispell
 # Author - Viktor Perets 16/08/18
 # For bcftools csq to work properly, your fasta and annotations should be located in the working directory
+# State exact names of reference and gff, not "."
+# 24-04-19 Updated to remove unecessary intermediates, speeded up unzipping
+
+# Requirements - Please install pigz, it is faster than gzip and gunzip on account of multithreading
 
 # Command structure
 # ConsequencePipe_16-08-18.sh FastqFileEnding PathToPrinseq PathToReference PathToAnnotations
@@ -44,8 +48,8 @@ do
 	echo -e "\e[1;31m Unzipping raw reads of $PairID... \e[0m"
 	
 	# Unzip each file
-	gunzip $PairOne
-	gunzip $PairTwo
+	pigz --decompress $PairOne
+	pigz --decompress $PairTwo
 
 	# Remove .gz from file names
 	PairOne=`echo ${PairOne:0:-3}`
@@ -120,8 +124,14 @@ do
 	# Run bcftools csq to create a vcf file with the consequence calls
 	bcftools csq --fasta-ref $PathToReference --gff-annot $PathToAnnotations $VcfFile -Ov -o $ConsequenceFile
 
-	# Zip the vcf files up
-	pigz $VcfFile
+	# Remove unecessary files
+	rm $Samfile
+	rm $Bamfile
+	rm $SortedBam
+	rm $IndexedBam
+	rm $NDupBam
+	rm $BcfFile
+	rm $VcfFile
 
 	# Progress
 	echo -e "\e[1;31m Pair $PairID fully processed, moving onto next... \e[0m"
