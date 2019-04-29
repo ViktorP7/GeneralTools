@@ -3,7 +3,7 @@ library(timevis)
 library(htmlwidgets)
 
 # Read in the GANTT table
-gantt <- read.table("R Tools/PhD_GANTT_26-03-19.csv", header=TRUE, sep=",", stringsAsFactors=FALSE)
+gantt <- read.table("C:/Users/UCD/Documents/R Tools/PhD_GANTT_26-03-19.csv", header=TRUE, sep=",", stringsAsFactors=FALSE)
 
 # Set the date formats
 gantt$start <- as.Date(gantt$start, format="%d/%m/%Y")
@@ -29,5 +29,5 @@ timevis(gantt, options=options)
 
 # Save the timeline to file
 saveWidget(timevis(gantt, options=options), 
-           "gantt27-03-19.html", selfcontained=FALSE)
+           "gantt29-04-19.html", selfcontained=FALSE)
 
