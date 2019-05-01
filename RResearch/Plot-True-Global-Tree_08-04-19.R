@@ -91,13 +91,15 @@ plot.phylo(noErrTree, edge.width = 1, font = 1, label.offset = 0.2,
 tiplabels(pch = 18, col = tipColours,  cex = 1)
 
 # Add the SNP scale
-add.scale.bar(x=2,y=-140)
+add.scale.bar(x=2,y=-140, cex = 1)
 
 # Add a legend
-legend("bottomright", legend = c("Ireland", "Europe", "Rest Of World", "Unknown"), 
-       text.col = c("green", "blue", "red", "black"), bty = "n", cex = 0.7)
+legend("bottomright", legend = c("Ireland", "Europe", "Rest Of World"), 
+       text.col = c("green", "blue", "red"), bty = "n", cex = 1)
 
 dev.off()
+
+#### Functions ####
 
 # Function to get the labels names for bryant isolates
 getBryantLabels <- function(isoTable, TheTree){

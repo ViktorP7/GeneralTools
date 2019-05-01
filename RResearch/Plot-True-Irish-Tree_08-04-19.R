@@ -103,8 +103,8 @@ tiplabels(pch = 18, col = tipColours,  cex = 1)
 add.scale.bar(cex = 1)
 
 # Add a legend
-legend("bottomright", legend = c("Leinster", "Connaught", "Ulster", "Munster", "Unknown"), 
-       text.col = c("green", "blue", "red", "orange", "black"), bty = "n", cex = 0.5)
+legend("topright", legend = c("Leinster", "Connaught", "Ulster", "Munster", "Unknown"), 
+       text.col = c("green", "blue", "red", "orange", "black"), bty = "n", cex = 0.9)
 
 dev.off()
 
@@ -135,6 +135,8 @@ sortedAll <- sort(allINMV)
 
 # Filter out all INMVs
 inmvDist <- allDist[allINMV, allINMV]
+
+#### No need for these below ####
 
 # Filter out type 1 INMVs
 inmv1Dist <- allDist[inmv1, inmv1]
@@ -187,6 +189,8 @@ points(propAll[,2], col = "red")
 lines(propAll[,1], col = "red")
 lines(propAll[,2], col = "blue", lty = 2)
 
+#### Continue using these below ####
+
 # Process distance matrices for each VNTR type
 inmv1Dist[upper.tri(inmv1Dist)] <- NA
 inmv2Dist[upper.tri(inmv2Dist)] <- NA
@@ -217,12 +221,13 @@ diffWB <- mean(distList$Between) - mean(distList$Within)
 boxplot(distList$Within, distList$Between, 
         main = "SNP distances within & between VNTR types", 
         names = c("Within", "Between"),
-        ylab = "SNP Difference")
+        ylab = "SNP Difference",
+        las = 1)
 stripchart(distList$Within, add = TRUE, at =1, 
-           method = "jitter", vertical = TRUE, col = alpha("lightblue",0.4),
+           method = "jitter", vertical = TRUE, col = alpha("blue",0.4),
            pch = 4)
 stripchart(distList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("lightgreen",0.4),
+           method = "jitter", vertical = TRUE, col = alpha("green",0.4),
            pch = 4)
 
 # Create a vector to store 10k values
@@ -279,9 +284,9 @@ h <- hist(medVector, breaks=30, plot=FALSE)
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
 plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Distribution of differences between medians", xlim=c(xmin, 25), cex.axis=0.8, las=1)
+     main="Isolate VNTR Type", xlim=c(xmin, 25), cex.axis=0.8, las=1)
 lines(c(diffMedWB,diffMedWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(20, 750, cex = 0.9,
+text(15, 750, cex = 0.9,
      paste("Actual Value\n= ", round(diffMedWB, digits=2)), col="blue")
 
 # Do with herd names now instead of VNTR
@@ -298,41 +303,42 @@ diffMedHerdWB <- median(distHerdList$Between) - median(distHerdList$Within)
 boxplot(distHerdList$Within, distHerdList$Between, 
         main = "SNP distances within & between herds", 
         names = c("Within", "Between"),
-        ylab = "SNP Difference")
+        ylab = "SNP Difference",
+        las = 1)
 stripchart(distHerdList$Within, add = TRUE, at =1, 
-           method = "jitter", vertical = TRUE, col = alpha("lightblue",1),
+           method = "jitter", vertical = TRUE, col = alpha("blue",1),
            pch = 4)
 stripchart(distHerdList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("lightgreen",0.4),
+           method = "jitter", vertical = TRUE, col = alpha("green",0.4),
            pch = 4)
 
 # Create a vector to store 10k values
-meanHerdVector <- rep(NA, 10000)
+medHerdVector <- rep(NA, 10000)
 
 # Do the same except this time shuffle 10k times
 system.time(for(run in 1:10000){
   distHerdRunnerList <- getWithinBetween(inmvDist, herdNames, TRUE)
   
-  # Get the difference of the means
-  meanHerdVector[run] <- mean(distHerdRunnerList$Between) - mean(distHerdRunnerList$Within) 
+  # Get the difference of the medians
+  medHerdVector[run] <- median(distHerdRunnerList$Between) - median(distHerdRunnerList$Within) 
   
 })
 
 # Plot as histogram
-xmin <- min(meanHerdVector, diffHerdWB)
-xmax <- max(meanHerdVector, diffHerdWB)
+xmin <- min(medHerdVector, diffMedHerdWB)
+xmax <- max(medHerdVector, diffMedHerdWB)
 
-quantiles <- quantile(meanHerdVector, c(0.025, 0.975))
+quantiles <- quantile(medHerdVector, c(0.025, 0.975))
 
-h <- hist(meanHerdVector, breaks=30, plot=FALSE)
+h <- hist(medHerdVector, breaks=30, plot=FALSE)
 
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
 plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Distribution of differences between means", xlim=c(xmin, 140), cex.axis=0.8, las=1)
-lines(c(diffHerdWB,diffHerdWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(110, 750, cex = 0.9,
-     paste("Actual Value\n= ", round(diffHerdWB, digits=2)), col="blue")
+     main="Isolate Herd", xlim=c(xmin, 170), cex.axis=0.8, las=1)
+lines(c(diffMedHerdWB,diffMedHerdWB), c(0, max(h$counts)), col="blue", lwd=3)
+text(150, 750, cex = 0.9,
+     paste("Actual Value\n= ", round(diffMedHerdWB, digits=2)), col="blue")
 
 # Now do the same but look at the county level instead of herd
 countyNames <- processHerds(herdNames)
@@ -352,41 +358,42 @@ diffMedCountyWB <- median(distCountyList$Between) - median(distCountyList$Within
 boxplot(distCountyList$Within, distCountyList$Between, 
         main = "SNP distances within & between counties", 
         names = c("Within", "Between"),
-        ylab = "SNP Difference")
+        ylab = "SNP Difference",
+        las = 1)
 stripchart(distCountyList$Within, add = TRUE, at =1, 
-           method = "jitter", vertical = TRUE, col = alpha("lightblue",0.6),
+           method = "jitter", vertical = TRUE, col = alpha("blue",0.6),
            pch = 4)
 stripchart(distCountyList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("lightgreen",0.4),
+           method = "jitter", vertical = TRUE, col = alpha("green",0.4),
            pch = 4)
 
 # Create a vector to store 10k values
-meanCountyVector <- rep(NA, 10000)
+medCountyVector <- rep(NA, 10000)
 
 # Do the same except this time shuffle 10k times
 system.time(for(run in 1:10000){
   distCountyRunnerList <- getWithinBetween(inmvDist, countyNames, TRUE)
   
-  # Get the difference of the means
-  meanCountyVector[run] <- mean(distCountyRunnerList$Between) - mean(distCountyRunnerList$Within) 
+  # Get the difference of the medians
+  medCountyVector[run] <- median(distCountyRunnerList$Between) - median(distCountyRunnerList$Within) 
   
 })
 
 # Plot as histogram
-xmin <- min(meanCountyVector, diffCountyWB)
-xmax <- max(meanCountyVector, diffCountyWB)
+xmin <- min(medCountyVector, diffMedCountyWB)
+xmax <- max(medCountyVector, diffMedCountyWB)
 
-quantiles <- quantile(meanCountyVector, c(0.025, 0.975))
+quantiles <- quantile(medCountyVector, c(0.025, 0.975))
 
-h <- hist(meanCountyVector, breaks=30, plot=FALSE)
+h <- hist(medCountyVector, breaks=30, plot=FALSE)
 
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
 plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Distribution of differences between means", xlim=c(xmin, 40), cex.axis=0.8, las=1)
-lines(c(diffCountyWB,diffCountyWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(30, 750, cex = 0.9,
-     paste("Actual Value\n= ", round(diffCountyWB, digits=2)), col="blue")
+     main="Isolate County", xlim=c(xmin, 100), cex.axis=0.8, las=1)
+lines(c(diffMedCountyWB,diffMedCountyWB), c(0, max(h$counts)), col="blue", lwd=3)
+text(80, 750, cex = 0.9,
+     paste("Actual Value\n= ", round(diffMedCountyWB, digits=2)), col="blue")
 ###########################################################################
 ###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###
 ###########################################################################
