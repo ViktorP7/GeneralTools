@@ -29,5 +29,5 @@ timevis(gantt, options=options)
 
 # Save the timeline to file
 saveWidget(timevis(gantt, options=options), 
-           "gantt29-04-19.html", selfcontained=FALSE)
+           "gantt1-05-19.html", selfcontained=FALSE)
 
