@@ -81,7 +81,7 @@ CITPropsNoFails <- convertToProp(CITFreqsNoFails)
 # Plot barplot to show overlap of overall consequences and selected consequences
 x=barplot(as.numeric(csqPropsNoFails[1:10,4]), col = "red", 
         ylab = "Proportion (%)", names.arg = csqPropsNoFails[1:10,1], las = 2, 
-        cex.names = 0.6, main = "Proportions of Consequences for CIT", xaxt = "n")
+        cex.names = 0.6, main = "Proportions of SNP Consequences for CIT", xaxt = "n")
 barplot(as.numeric(CITPropsNoFails[1:10,3]), col = alpha("blue", 0.5),
         add = T, yaxt = "n")
 

@@ -49,7 +49,7 @@ plotDNAvODinBeadsvPhenolvCTAB <- function(extractionTable, concentrationThreshol
   
   # Plot OD600 reading against total DNA concentration
   plot(x=extractionTable[, "OD600nm"], y=extractionTable[, "Total DNA ng"], # Provide X and Y coordinates
-       main="DNA Extracted from 500ul liquid", # Set title
+       main="DNA Extracted from 500ul culture", # Set title
        xlab="OD600nm", # Label X axis
        ylab="Total DNA (ng)", # Label y axis
        log = "y", # make y axis logarithmic
