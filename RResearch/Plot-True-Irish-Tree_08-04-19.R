@@ -119,7 +119,7 @@ corktipColours <- makeIrishRegionColours(cork10$tip.label)
 # Plot Cork 10
 plot.phylo(cork10, edge.width = 0.2, font = 1, label.offset = 0.2, 
            tip.color = corktipColours,
-           align.tip.label = FALSE, type="phylogram", cex = 0.5)
+           align.tip.label = FALSE, type="phylogram", cex = 0.7)
 
 
 # Add the SNP scale
