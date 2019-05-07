@@ -7,7 +7,7 @@ library(ape)
 library(phytools)
 
 # Set path variables
-pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/CVRL-MAP-Batch-Jan.csv"
+pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
 pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_18-03-19"
 
@@ -174,9 +174,9 @@ getCVRLLabels <- function(isoTable, TheTree){
     for(index in 1:length(nameVector)){
       
       # Check if the current accession is present in the big table
-      if(isoTable[row,"Isolate-ID(TBxx-xxxxxx)"] == nameVector[index]){
+      if(isoTable[row,"AliquotFormat"] == nameVector[index]){
         
-        newname <- paste(nameVector[index], "_", isoTable[row,"Herd Location"], "_",
+        newname <- paste(nameVector[index], "_", isoTable[row,"Herd Ref"], "_",
                          isoTable[row,"INMV Group"])
         nameVector[index] <- newname
       }else{

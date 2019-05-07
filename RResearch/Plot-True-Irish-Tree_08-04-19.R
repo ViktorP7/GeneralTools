@@ -1,6 +1,7 @@
 # 11/03/19 modified for a RAxML tree input file
 # 25-03-19 modified for extra isolates
 # 08-04-19 modified for better root and to find VNTR group distances
+# 07-05-19 modified for new metadata
 
 # Load packages
 library(ape)
@@ -8,7 +9,7 @@ library(phytools)
 library(scales)
 
 # Set path variables
-pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/CVRL-MAP-Batch-Jan.csv"
+pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
 pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_18-03-19"
 
@@ -73,8 +74,11 @@ irishOnlytree <- drop.tip(noErrTree, dropper)
 # Convert branch lengths to SNP values
 irishOnlytree$edge.length <- irishOnlytree$edge.length * 49434
 
-# Get the floored values o the lengths
-flooredSNPs <- floor(irishOnlytree$edge.length)
+# Get the rounded values o the lengths
+roundedSNPs <- round(irishOnlytree$edge.length)
+
+# Assign floored SNPs
+irishOnlytree$edge.length <- roundedSNPs
 
 # Get the colours
 tipColours <- makeIrishRegionColours(irishOnlytree$tip.label)
@@ -106,7 +110,24 @@ add.scale.bar(cex = 1)
 legend("topright", legend = c("Leinster", "Connaught", "Ulster", "Munster", "Unknown"), 
        text.col = c("green", "blue", "red", "orange", "black"), bty = "n", cex = 0.9)
 
+# Extract Cork 10 herd only
+cork10 <- extract.clade(irishOnlytree, node = 205)
+
+# Get the colours
+corktipColours <- makeIrishRegionColours(cork10$tip.label)
+
+# Plot Cork 10
+plot.phylo(cork10, edge.width = 0.2, font = 1, label.offset = 0.2, 
+           tip.color = corktipColours,
+           align.tip.label = FALSE, type="phylogram", cex = 0.5)
+
+
+# Add the SNP scale
+add.scale.bar(x=4,y=1,cex = 1.0)
+
 dev.off()
+
+#### Post Tree Analysis ####
 
 # Find INMV type 1 strains
 inmv1 <- findVNTRs(irishOnlytree$tip.label, "1")
@@ -117,8 +138,8 @@ inmv2 <- findVNTRs(irishOnlytree$tip.label, "2")
 # Find the distances between all isolates
 allDist <- cophenetic(irishOnlytree)
 
-# Floor the distances
-allDist <- floor(allDist)
+# Round the distances
+allDist <- round(allDist)
 
 # Remove unecessary zeroes by filling with NA
 for(index in 1:nrow(allDist)){
@@ -189,30 +210,16 @@ points(propAll[,2], col = "red")
 lines(propAll[,1], col = "red")
 lines(propAll[,2], col = "blue", lty = 2)
 
-#### Continue using these below ####
+#### Continue using these below for VNTR ####
 
 # Process distance matrices for each VNTR type
-inmv1Dist[upper.tri(inmv1Dist)] <- NA
-inmv2Dist[upper.tri(inmv2Dist)] <- NA
 inmvDist[upper.tri(inmvDist)] <- NA
-
-inmv1DVec <- as.vector(inmv1Dist)
-inmv2DVec <- as.vector(inmv2Dist)
-inmvDVec <- as.vector(inmvDist)
-
-# Plot as histograms
-hist(inmv1DVec, xlab = "SNP Distance", xlim = c(0,250), 
-     main = "SNP distance distribution between INMV1 isolates")
-hist(inmv2DVec, xlab = "SNP Distance", xlim = c(0,250), 
-     main = "SNP distance distribution between INMV2 isolates")
-hist(inmvDVec, xlab = "SNP Distance", xlim = c(0,250), 
-     main = "SNP distance distribution between all isolates")
 
 # Get names of matrix
 nameVec <- getNames(inmvDist)
 
 # Get the within and between distances
-system.time(distList <- getWithinBetween(inmvDist, nameVec, FALSE))
+distList <- getWithinBetween(inmvDist, nameVec, FALSE)
 
 # Get the difference of the means
 diffWB <- mean(distList$Between) - mean(distList$Within) 
@@ -230,35 +237,7 @@ stripchart(distList$Between, add = TRUE, at =2,
            method = "jitter", vertical = TRUE, col = alpha("green",0.4),
            pch = 4)
 
-# Create a vector to store 10k values
-meanVector <- rep(NA, 10000)
-
-# Do the same except this time shuffle 10k times
-for(run in 1:10000){
-  distRunnerList <- getWithinBetween(inmvDist, nameVec, TRUE)
-
-  # Get the difference of the means
-  meanVector[run] <- mean(distRunnerList$Between) - mean(distRunnerList$Within) 
-
-}
-
-# Plot as histogram
-xmin <- min(meanVector, diffWB)
-xmax <- max(meanVector, diffWB)
-
-quantiles <- quantile(meanVector, c(0.025, 0.975))
-
-h <- hist(meanVector, breaks=30, plot=FALSE)
-
-cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
-
-plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Distribution of differences between means", xlim=c(xmin, 25), cex.axis=0.8, las=1)
-lines(c(diffWB,diffWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(20, 750, cex = 0.9,
-     paste("Actual Value\n= ", round(diffWB, digits=2)), col="blue")
-
-# Do again but with median differences
+# Do with median differences
 diffMedWB <- median(distList$Between) - median(distList$Within)
 
 # Create a vector to store 10k values
@@ -289,14 +268,22 @@ lines(c(diffMedWB,diffMedWB), c(0, max(h$counts)), col="blue", lwd=3)
 text(15, 750, cex = 0.9,
      paste("Actual Value\n= ", round(diffMedWB, digits=2)), col="blue")
 
-# Do with herd names now instead of VNTR
-herdNames <- getHerdNames(inmvDist)
+#### Do with herd names now instead of VNTR, get herds first ####
+allHerds <- isolateHerder(irishOnlytree$tip.label)
+
+# Get herd distances
+herdDist <- allDist[allHerds, allHerds]
+
+# Process distance matrices for each herd
+herdDist[upper.tri(herdDist)] <- NA
+
+# Get the herd names
+herdNames <- getHerdNames(herdDist)
 
 # Get the within and between distances for herds
-system.time(distHerdList <- getWithinBetween(inmvDist, herdNames, FALSE))
+distHerdList <- getWithinBetween(herdDist, herdNames, FALSE)
 
-# Get the difference of the means and medians
-diffHerdWB <- mean(distHerdList$Between) - mean(distHerdList$Within)
+# Get the difference of the medians
 diffMedHerdWB <- median(distHerdList$Between) - median(distHerdList$Within)
 
 # Plot a boxplot comparing within and between for herds
@@ -317,7 +304,7 @@ medHerdVector <- rep(NA, 10000)
 
 # Do the same except this time shuffle 10k times
 system.time(for(run in 1:10000){
-  distHerdRunnerList <- getWithinBetween(inmvDist, herdNames, TRUE)
+  distHerdRunnerList <- getWithinBetween(herdDist, herdNames, TRUE)
   
   # Get the difference of the medians
   medHerdVector[run] <- median(distHerdRunnerList$Between) - median(distHerdRunnerList$Within) 
@@ -335,23 +322,22 @@ h <- hist(medHerdVector, breaks=30, plot=FALSE)
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
 plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Isolate Herd", xlim=c(xmin, 170), cex.axis=0.8, las=1)
+     main="Isolate Herd", xlim=c(xmin, 190), cex.axis=0.8, las=1)
 lines(c(diffMedHerdWB,diffMedHerdWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(150, 750, cex = 0.9,
+text(165, 750, cex = 0.9,
      paste("Actual Value\n= ", round(diffMedHerdWB, digits=2)), col="blue")
 
 # Now do the same but look at the county level instead of herd
 countyNames <- processHerds(herdNames)
 # Change a few manually
-countyNames[c(1,2,19,45,46)] <- "Cork"
-countyNames[c(9,10,28,29,30,31)] <- "Clare"
-countyNames[c(32,33)] <- "Limerick"
+countyNames[c(1,2,26,38:54, 62, 73, 74)] <- "Cork"
+countyNames[c(13,14)] <- "North1"
+countyNames[c(29,36)] <- "North2"
 
 # Get the within and between distances for counties
-system.time(distCountyList <- getWithinBetween(inmvDist, countyNames, FALSE))
+distCountyList <- getWithinBetween(herdDist, countyNames, FALSE)
 
-# Get the difference of the means and medians
-diffCountyWB <- mean(distCountyList$Between) - mean(distCountyList$Within)
+# Get the difference of the medians
 diffMedCountyWB <- median(distCountyList$Between) - median(distCountyList$Within)
 
 # Plot a boxplot comparing within and between for counties
@@ -372,7 +358,7 @@ medCountyVector <- rep(NA, 10000)
 
 # Do the same except this time shuffle 10k times
 system.time(for(run in 1:10000){
-  distCountyRunnerList <- getWithinBetween(inmvDist, countyNames, TRUE)
+  distCountyRunnerList <- getWithinBetween(herdDist, countyNames, TRUE)
   
   # Get the difference of the medians
   medCountyVector[run] <- median(distCountyRunnerList$Between) - median(distCountyRunnerList$Within) 
@@ -390,9 +376,9 @@ h <- hist(medCountyVector, breaks=30, plot=FALSE)
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
 plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Isolate County", xlim=c(xmin, 100), cex.axis=0.8, las=1)
+     main="Isolate County", xlim=c(xmin, 20), cex.axis=0.8, las=1)
 lines(c(diffMedCountyWB,diffMedCountyWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(80, 750, cex = 0.9,
+text(10, 750, cex = 0.9,
      paste("Actual Value\n= ", round(diffMedCountyWB, digits=2)), col="blue")
 ###########################################################################
 ###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###
@@ -471,9 +457,9 @@ getCVRLLabels <- function(isoTable, TheTree){
     for(index in 1:length(nameVector)){
       
       # Check if the current accession is present in the big table
-      if(isoTable[row,"Isolate-ID(TBxx-xxxxxx)"] == nameVector[index]){
+      if(isoTable[row,"AliquotFormat"] == nameVector[index]){
         
-        newname <- paste(nameVector[index], "_", isoTable[row,"Herd Location"], "_",
+        newname <- paste(nameVector[index], "_", isoTable[row,"Herd Ref"], "_",
                          isoTable[row,"INMV Group"])
         nameVector[index] <- newname
       }else{
@@ -638,13 +624,41 @@ makeIrishRegionColours <- function(realNames){
       colourVec[index] <- "orange"
     } else if(grepl("Leitrim", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue"
+      colourVec[index] <- "blue"    
+    } else if(grepl("Kerry", colourVec[index]) == TRUE){
+        
+      colourVec[index] <- "orange"
     } else if(grepl("Clare", colourVec[index]) == TRUE){
       
       colourVec[index] <- "orange"
     } else if(grepl("Wexford", colourVec[index]) == TRUE){
       
       colourVec[index] <- "green"
+    } else if(grepl("Derry", colourVec[index]) == TRUE){
+        
+      colourVec[index] <- "red"
+    } else if(grepl("Monaghan", colourVec[index]) == TRUE){
+        
+      colourVec[index] <- "red"
+    } else if (grepl("Meath", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "green"
+      
+    } else if(grepl("Sligo", colourVec[index]) == TRUE){
+        
+      colourVec[index] <- "blue"
+    } else if(grepl("Laois", colourVec[index]) == TRUE){
+        
+      colourVec[index] <- "green"
+    } else if(grepl("Tipperary", colourVec[index]) == TRUE){
+        
+        colourVec[index] <- "orange"
+    } else if(grepl("Kildare", colourVec[index]) == TRUE){
+          
+        colourVec[index] <- "green"
+    } else if(grepl("Mayo", colourVec[index]) == TRUE){
+          
+        colourVec[index] <- "blue"
     } else if(grepl("Limerick", colourVec[index]) == TRUE){
       
       colourVec[index] <- "orange"
@@ -657,9 +671,7 @@ makeIrishRegionColours <- function(realNames){
     } else if(grepl("NA", colourVec[index]) == TRUE){
       
       colourVec[index] <- "black"
-    } else if(grepl("Kerry", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "orange"
+
     } else if(grepl("Donegal", colourVec[index]) == TRUE){
       
       colourVec[index] <- "red"
@@ -678,15 +690,10 @@ makeIrishRegionColours <- function(realNames){
     } else if (grepl("Kilkenny", colourVec[index]) == TRUE){
       
       colourVec[index] <- "green"
-    } else if (grepl("Meath", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "green"
+
     } else if (grepl("Galway", colourVec[index]) == TRUE){
       
       colourVec[index] <- "blue"
-    } else if (grepl("Tipperary", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "orange"
     } else if (grepl("Roscommon", colourVec[index]) == TRUE){
       
       colourVec[index] <- "blue"
@@ -1005,4 +1012,31 @@ processHerds <- function(herds){
     counties[index] <- substr(herds[index], 1, nchar(herds[index])-1)
   }
   return(counties)
+}
+
+# Function to pull out tiplabels corresponding to herds
+isolateHerder <- function(tiplabel){
+  
+  # Create vector of tips to find
+  finderVec <- c()
+  
+  # Loop thru the tips
+  for(index in 1:length(tiplabel)){
+    
+    # Split the string and take the 3rd value
+    herdInfo <- strsplit(tiplabel[index], split = "_")[[1]][2]
+    
+    # Skip if it's an NA
+    if(is.na(herdInfo) == TRUE){
+      
+      next
+      
+    }else{
+      
+      finderVec <- append(finderVec, index)
+      
+    }
+  }
+  
+  return(finderVec)
 }
