@@ -432,6 +432,14 @@ getBryantLabels <- function(isoTable, TheTree){
         
         nameVector[index] <- "16-4934"
         
+      }else if(nameVector[index] == "14-4776"){
+        
+        nameVector[index] <- "17-4776"
+        
+      }else if(nameVector[index] == "14-2662"){
+        
+        nameVector[index] <- "14-2622"
+        
       }else{
         
         next
