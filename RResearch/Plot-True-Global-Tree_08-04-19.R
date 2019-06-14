@@ -1,6 +1,7 @@
 # 11/03/19 modified for a RAxML tree input file
 # 25-03-19 modified for extra isolates
 # 08-04-19 modified for better root and to find VNTR group distances
+# 12-06-19 modified for new influx of data
 
 # Load packages
 library(ape)
@@ -9,7 +10,7 @@ library(phytools)
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_18-03-19"
+pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_10-06-19"
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso,
@@ -46,36 +47,32 @@ plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01,
 nodelabels(cex = 0.05, frame = "none")
 tiplabels()
 
-pdf("CombinedMarch2018Tree4.pdf", width=20, height=20)
+pdf("CombinedJune2019Trees.pdf", width=20, height=20)
 
-# Root the tree at 332 - ancestor rooted in the Bryant paper
-rootree <- root(TheTree, node = 332)
+# Root the tree at 466 - ancestor rooted in the Bryant paper
+rootree <- root(TheTree, node = 466)
 
 # Drop tips for far away ancestors (silvaticum and hominissius)
-dropNumbers <- c(69,70)
+dropNumbers <- c(186,187)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
-# Extract the clade that doesn't have all the distant sheep
-extractedTree <- extract.clade(droppedTree, node = 319)
-
-# Extract further
-extractTree <- extract.clade(extractedTree, node = 227)
-
-# Drop the ERR0s
-dropErr <- c(57,58,100)
-noErrTree <- drop.tip(extractTree, dropErr)
+# Extract the clade that doesn't have all the distant sheep and cows
+extractedTree <- extract.clade(droppedTree, node = 452)
 
 # Convert branch lengths to SNP values
-noErrTree$edge.length <- noErrTree$edge.length * 49434
+extractedTree$edge.length <- extractedTree$edge.length * 48283
 
-# Get the floored values o the lengths
-flooredSNPs <- floor(noErrTree$edge.length)
+# Get the rounded values o the lengths
+roundedSNPs <- round(extractedTree$edge.length)
+
+# Assign rounded SNPs
+extractedTree$edge.length <- roundedSNPs
 
 # Get the colours
-tipColours <- makeRegionColours(noErrTree$tip.label)
+tipColours <- makeRegionColours(extractedTree$tip.label)
 
-# Plot the no sheep tree
-plot.phylo(noErrTree, edge.width = 0.2, font = 1, label.offset = 0.2, 
+# Plot the tree
+plot.phylo(extractedTree, edge.width = 0.2, font = 1, label.offset = 0.2, 
            tip.color = tipColours,
            align.tip.label = FALSE, type="phylogram", cex = 0.2)
 
@@ -83,19 +80,19 @@ plot.phylo(noErrTree, edge.width = 0.2, font = 1, label.offset = 0.2,
 add.scale.bar(cex = 3)
 
 # Plot international tree as a fan
-plot.phylo(noErrTree, edge.width = 1, font = 1, label.offset = 0.2, 
-           tip.color = tipColours, edge.color = "darkgrey",
+plot.phylo(extractedTree, edge.width = 2, font = 1, label.offset = 0.2, 
+           tip.color = tipColours, edge.color = "grey50",
            align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
 
 #Add shaped tip labels
-tiplabels(pch = 18, col = tipColours,  cex = 1)
+tiplabels(pch = 18, col = tipColours,  cex = 2)
 
 # Add the SNP scale
-add.scale.bar(x=2,y=-140, cex = 1)
+add.scale.bar(x=30,y=-120, cex = 1)
 
 # Add a legend
-legend("bottomright", legend = c("Ireland", "Europe", "Rest Of World"), 
-       text.col = c("green", "blue", "red"), bty = "n", cex = 1)
+legend(x=40, y=140, legend = c("Ireland", "Europe", "World"), 
+       text.col = c("darkgreen", "blue", "darkorange3"), bty = "n", cex = 0.7)
 
 dev.off()
 
@@ -192,49 +189,6 @@ getCVRLLabels <- function(isoTable, TheTree){
   return(nameVector)
 }
 
-# Function to generate colours based on species
-makeSpeciesColours <- function(realNames){
-  
-  # Copy the name vector
-  colourVec <- realNames
-  
-  # Loop thru each name
-  for(index in 1:length(colourVec)){
-    
-    # Check if part of a word is in the name and assign a colour
-    if(grepl("Human", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Cow", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "green"
-    } else if(grepl("Bison", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "green" 
-    } else if(grepl("Sheep", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Goat", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Moufflon", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Deer", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "orange"
-    } else if(grepl("Passaged", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "grey"
-    } else {
-      
-      colourVec[index] <- "black"
-    }
-  }
-  
-  return(colourVec)
-}
-
 # Function to generate colours based on region
 makeRegionColours <- function(realNames){
   
@@ -247,7 +201,7 @@ makeRegionColours <- function(realNames){
     # Check if part of a word is in the name and assign a colour
     if(grepl("Ireland", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "darkgreen"
     } else if(grepl("UK", colourVec[index]) == TRUE){
       
       colourVec[index] <- "blue"
@@ -286,31 +240,31 @@ makeRegionColours <- function(realNames){
       colourVec[index] <- "blue"
     } else if(grepl("NewZealand", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "darkorange3"
     } else if(grepl("USA", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "darkorange3"
     } else if(grepl("Canada", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "darkorange3"
     } else if(grepl("Venezuela", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "darkorange3"
     } else if(grepl("India", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "darkorange3"
     } else if(grepl("Argentina", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "darkorange3"
     } else if(grepl("ERR0", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "grey"
+      colourVec[index] <- "grey30"
     } else if(grepl("MAPK10", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "grey"
+      colourVec[index] <- "grey30"
     } else {
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "darkgreen"
     }
   }
   
