@@ -88,11 +88,12 @@ plot.phylo(extractedTree, edge.width = 2, font = 1, label.offset = 0.2,
 tiplabels(pch = 18, col = tipColours,  cex = 2)
 
 # Add the SNP scale
-add.scale.bar(x=30,y=-120, cex = 1)
+add.scale.bar(x=30,y=-120, cex = 3,lcol = "grey50", lwd = 3)
+text(x=60,y=-130, "SNPs", cex = 3)
 
 # Add a legend
 legend(x=40, y=140, legend = c("Ireland", "Europe", "World"), 
-       text.col = c("darkgreen", "blue", "darkorange3"), bty = "n", cex = 0.7)
+       text.col = c("darkgreen", "blue", "darkorange3"), bty = "n", cex = 2,y.intersp = 0.6)
 
 dev.off()
 
@@ -136,7 +137,7 @@ getBryantLabels <- function(isoTable, TheTree){
         nameVector[index] <- "MAP K10"
       }else if(nameVector[index] == "6287-MAP"){
         
-        nameVector[index] <- "14-6278_Cork 9_1(July2018)"
+        nameVector[index] <- "14-6278_Cork_9_1"
         
       }else if(nameVector[index] == "14-5154"){
         
@@ -145,6 +146,17 @@ getBryantLabels <- function(isoTable, TheTree){
       }else if(nameVector[index] == "16-4434"){
         
         nameVector[index] <- "16-4934"
+        
+      }else if(nameVector[index] == "14-4776"){
+        
+        nameVector[index] <- "17-4776"
+        
+      }else if(nameVector[index] == "14-2662"){
+        
+        nameVector[index] <- "14-2622"
+      }else if(nameVector[index] == "14-7468"){
+        
+        nameVector[index] <- "14-7486"
         
       }else{
         
