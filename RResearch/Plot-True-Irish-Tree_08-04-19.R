@@ -2,6 +2,7 @@
 # 25-03-19 modified for extra isolates
 # 08-04-19 modified for better root and to find VNTR group distances
 # 07-05-19 modified for new metadata
+# 12-06-19 modified for new data
 
 # Load packages
 library(ape)
@@ -11,7 +12,7 @@ library(scales)
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_18-03-19"
+pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_10-06-19"
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso,
@@ -48,31 +49,24 @@ plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01,
 nodelabels(cex = 0.05, frame = "none")
 tiplabels()
 
-pdf("CombinedMarch2018Tree4.pdf", width=20, height=20)
+pdf("June2019Tree.pdf", width=20, height=20)
 
-# Root the tree at 332 - ancestor rooted in the Bryant paper
-rootree <- root(TheTree, node = 332)
+# Root the tree at 466 - ancestor rooted in the Bryant paper
+rootree <- root(TheTree, node = 466)
 
 # Drop tips for far away ancestors (silvaticum and hominissius)
-dropNumbers <- c(69,70)
+dropNumbers <- c(186,187)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
-# Extract the clade that doesn't have all the distant sheep
-extractedTree <- extract.clade(droppedTree, node = 319)
-
-# Extract further
-extractTree <- extract.clade(extractedTree, node = 227)
-
-# Drop the ERR0s
-dropErr <- c(57,58,100)
-noErrTree <- drop.tip(extractTree, dropErr)
+# Extract the clade that doesn't have all the distant sheep and cows
+extractedTree <- extract.clade(droppedTree, node = 452)
 
 # Get rid of the non-irish isolates
-dropper <- toDropInternationalTips(noErrTree$tip.label)
-irishOnlytree <- drop.tip(noErrTree, dropper)
+dropper <- toDropInternationalTips(extractedTree$tip.label)
+irishOnlytree <- drop.tip(extractedTree, dropper)
 
 # Convert branch lengths to SNP values
-irishOnlytree$edge.length <- irishOnlytree$edge.length * 49434
+irishOnlytree$edge.length <- irishOnlytree$edge.length * 48283
 
 # Get the rounded values o the lengths
 roundedSNPs <- round(irishOnlytree$edge.length)
@@ -83,38 +77,20 @@ irishOnlytree$edge.length <- roundedSNPs
 # Get the colours
 tipColours <- makeIrishRegionColours(irishOnlytree$tip.label)
 
-# Plot the national tree
-plot.phylo(irishOnlytree, edge.width = 0.2, font = 1, label.offset = 0.2, 
-           tip.color = tipColours,
-           align.tip.label = FALSE, type="phylogram", cex = 0.5)
+# Plot Irish tree
+plotIrishTree(irishOnlytree, tipColours)
 
-# Add a legend
-legend("bottomright", legend = c("Leinster", "Connaught", "Ulster", "Munster", "Unknown"), 
-       text.col = c("green", "blue", "red", "orange", "black"), bty = "n", cex = 3.0)
-
-# Add the SNP scale
-add.scale.bar(cex = 3.0)
-
-# Plot national tree as a fan
-plot.phylo(irishOnlytree, edge.width = 1, font = 1, label.offset = 0.2, 
-           tip.color = tipColours, edge.color = "darkgrey",
-           align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
-
-#Add shaped tip labels
-tiplabels(pch = 18, col = tipColours,  cex = 1)
-
-# Add the SNP scale
-add.scale.bar(cex = 1)
-
-# Add a legend
-legend("topright", legend = c("Leinster", "Connaught", "Ulster", "Munster", "Unknown"), 
-       text.col = c("green", "blue", "red", "orange", "black"), bty = "n", cex = 0.9)
+# Plot Irish fan tree
+plotIrishFan(irishOnlytree, tipColours, polygonCoords, counties)
 
 # Extract Cork 10 herd only
-cork10 <- extract.clade(irishOnlytree, node = 205)
+cork10 <- extract.clade(irishOnlytree, node = 165)
 
 # Get the colours
 corktipColours <- makeIrishRegionColours(cork10$tip.label)
+
+# Refresh par
+par(mar=c(0,0,0,0), fig=c(0,1,0,1))
 
 # Plot Cork 10
 plot.phylo(cork10, edge.width = 0.2, font = 1, label.offset = 0.2, 
@@ -123,7 +99,8 @@ plot.phylo(cork10, edge.width = 0.2, font = 1, label.offset = 0.2,
 
 
 # Add the SNP scale
-add.scale.bar(x=4,y=1,cex = 1.0)
+add.scale.bar(x=6,y=10,cex = 1.0)
+text(x=6.5,y=9, "SNP")
 
 dev.off()
 
@@ -148,7 +125,7 @@ for(index in 1:nrow(allDist)){
 }
 
 # other INMV locations
-others <- c(11,95)
+others <- c(3,69,121)
 
 # Combine INMV vectors and sort
 allINMV <- c(inmv1, inmv2, others)
@@ -221,9 +198,6 @@ nameVec <- getNames(inmvDist)
 # Get the within and between distances
 distList <- getWithinBetween(inmvDist, nameVec, FALSE)
 
-# Get the difference of the means
-diffWB <- mean(distList$Between) - mean(distList$Within) 
-
 # Plot a boxplot comparing within and between
 boxplot(distList$Within, distList$Between, 
         main = "SNP distances within & between VNTR types", 
@@ -234,7 +208,7 @@ stripchart(distList$Within, add = TRUE, at =1,
            method = "jitter", vertical = TRUE, col = alpha("blue",0.4),
            pch = 4)
 stripchart(distList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("green",0.4),
+           method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
            pch = 4)
 
 # Do with median differences
@@ -263,9 +237,9 @@ h <- hist(medVector, breaks=30, plot=FALSE)
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
 plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Isolate VNTR Type", xlim=c(xmin, 25), cex.axis=0.8, las=1)
+     main="Isolate VNTR Type", xlim=c(xmin, 10), cex.axis=0.8, las=1)
 lines(c(diffMedWB,diffMedWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(15, 750, cex = 0.9,
+text(8, 750, cex = 0.9,
      paste("Actual Value\n= ", round(diffMedWB, digits=2)), col="blue")
 
 #### Do with herd names now instead of VNTR, get herds first ####
@@ -296,7 +270,7 @@ stripchart(distHerdList$Within, add = TRUE, at =1,
            method = "jitter", vertical = TRUE, col = alpha("blue",1),
            pch = 4)
 stripchart(distHerdList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("green",0.4),
+           method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
            pch = 4)
 
 # Create a vector to store 10k values
@@ -330,9 +304,9 @@ text(165, 750, cex = 0.9,
 # Now do the same but look at the county level instead of herd
 countyNames <- processHerds(herdNames)
 # Change a few manually
-countyNames[c(1,2,26,38:54, 62, 73, 74)] <- "Cork"
-countyNames[c(13,14)] <- "North1"
-countyNames[c(29,36)] <- "North2"
+countyNames[c(84,85,118, 119, 120, 74)] <- "Cork"
+countyNames[c(8,15)] <- "North1"
+countyNames[c(142,143)] <- "North2"
 
 # Get the within and between distances for counties
 distCountyList <- getWithinBetween(herdDist, countyNames, FALSE)
@@ -350,7 +324,7 @@ stripchart(distCountyList$Within, add = TRUE, at =1,
            method = "jitter", vertical = TRUE, col = alpha("blue",0.6),
            pch = 4)
 stripchart(distCountyList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("green",0.4),
+           method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
            pch = 4)
 
 # Create a vector to store 10k values
@@ -376,10 +350,64 @@ h <- hist(medCountyVector, breaks=30, plot=FALSE)
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
 plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Isolate County", xlim=c(xmin, 20), cex.axis=0.8, las=1)
+     main="Isolate County", xlim=c(xmin, 80), cex.axis=0.8, las=1)
 lines(c(diffMedCountyWB,diffMedCountyWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(10, 750, cex = 0.9,
+text(65, 750, cex = 0.9,
      paste("Actual Value\n= ", round(diffMedCountyWB, digits=2)), col="blue")
+
+# Look at the birth county now
+birthcountyNames <- getBirthCounties(herdDist)
+# Change a few manually
+birthcountyNames <- birthcountyNames[-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143)]
+
+newHerdDist <- herdDist[-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143),-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143)]
+
+# Get the within and between distances for counties
+distbirthCountyList <- getWithinBetween(newHerdDist, birthcountyNames, FALSE)
+
+# Get the difference of the medians
+diffMedbirthCountyWB <- median(distbirthCountyList$Between) - median(distbirthCountyList$Within)
+
+# Plot a boxplot comparing within and between for counties
+boxplot(distbirthCountyList$Within, distbirthCountyList$Between, 
+        main = "SNP distances within & between birth counties", 
+        names = c("Within", "Between"),
+        ylab = "SNP Difference",
+        las = 1)
+stripchart(distbirthCountyList$Within, add = TRUE, at =1, 
+           method = "jitter", vertical = TRUE, col = alpha("blue",0.6),
+           pch = 4)
+stripchart(distbirthCountyList$Between, add = TRUE, at =2, 
+           method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
+           pch = 4)
+
+# Create a vector to store 10k values
+medbirthCountyVector <- rep(NA, 10000)
+
+# Do the same except this time shuffle 10k times
+system.time(for(run in 1:10000){
+  distbirthCountyRunnerList <- getWithinBetween(newHerdDist, birthcountyNames, TRUE)
+  
+  # Get the difference of the medians
+  medbirthCountyVector[run] <- median(distbirthCountyRunnerList$Between) - median(distbirthCountyRunnerList$Within) 
+  
+})
+
+# Plot as histogram
+xmin <- min(medbirthCountyVector, diffMedbirthCountyWB)
+xmax <- max(medCountyVector, diffMedCountyWB)
+
+quantiles <- quantile(medbirthCountyVector, c(0.025, 0.975))
+
+h <- hist(medbirthCountyVector, breaks=30, plot=FALSE)
+
+cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
+
+plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
+     main="Isolate Birth County", xlim=c(xmin, 50), cex.axis=0.8, las=1)
+lines(c(diffMedbirthCountyWB,diffMedbirthCountyWB), c(0, max(h$counts)), col="blue", lwd=3)
+text(35, 750, cex = 0.9,
+     paste("Actual Value\n= ", round(diffMedbirthCountyWB, digits=2)), col="blue")
 ###########################################################################
 ###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###
 ###########################################################################
@@ -422,7 +450,7 @@ getBryantLabels <- function(isoTable, TheTree){
         nameVector[index] <- "MAP K10"
       }else if(nameVector[index] == "6287-MAP"){
         
-        nameVector[index] <- "14-6278_Cork 9(Jul18)_1"
+        nameVector[index] <- "14-6278_Cork_9_1"
         
       }else if(nameVector[index] == "14-5154"){
         
@@ -439,6 +467,9 @@ getBryantLabels <- function(isoTable, TheTree){
       }else if(nameVector[index] == "14-2662"){
         
         nameVector[index] <- "14-2622"
+      }else if(nameVector[index] == "14-7468"){
+          
+        nameVector[index] <- "14-7486"
         
       }else{
         
@@ -467,8 +498,10 @@ getCVRLLabels <- function(isoTable, TheTree){
       # Check if the current accession is present in the big table
       if(isoTable[row,"AliquotFormat"] == nameVector[index]){
         
-        newname <- paste(nameVector[index], "_", isoTable[row,"Herd Ref"], "_",
-                         isoTable[row,"INMV Group"])
+        herd <- strsplit(isoTable[row,"Herd Ref"], split = " ")[[1]][2]
+        
+        newname <- paste(nameVector[index], "_", isoTable[row, "Herd Location"], "_", herd, "_",
+                         isoTable[row,"INMV Group"], "_", isoTable[row, "County of Birth"])
         nameVector[index] <- newname
       }else{
         
@@ -483,131 +516,6 @@ getCVRLLabels <- function(isoTable, TheTree){
   return(nameVector)
 }
 
-# Function to generate colours based on species
-makeSpeciesColours <- function(realNames){
-  
-  # Copy the name vector
-  colourVec <- realNames
-  
-  # Loop thru each name
-  for(index in 1:length(colourVec)){
-    
-    # Check if part of a word is in the name and assign a colour
-    if(grepl("Human", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Cow", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "green"
-    } else if(grepl("Bison", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "green" 
-    } else if(grepl("Sheep", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Goat", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Moufflon", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Deer", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "orange"
-    } else if(grepl("Passaged", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "grey"
-    } else {
-      
-      colourVec[index] <- "black"
-    }
-  }
-  
-  return(colourVec)
-}
-
-# Function to generate colours based on region
-makeRegionColours <- function(realNames){
-  
-  # Copy the name vector
-  colourVec <- realNames
-  
-  # Loop thru each name
-  for(index in 1:length(colourVec)){
-    
-    # Check if part of a word is in the name and assign a colour
-    if(grepl("Ireland", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "green"
-    } else if(grepl("UK", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Italy", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue" 
-    } else if(grepl("Spain", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("France", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Scotland", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("England", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Wales", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Germany", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Netherlands", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Czech", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Greece", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("Norway", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "blue"
-    } else if(grepl("NewZealand", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("USA", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Canada", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Venezuela", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("India", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("Argentina", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "red"
-    } else if(grepl("ERR0", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "grey"
-    } else if(grepl("MAPK10", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "grey"
-    } else {
-      
-      colourVec[index] <- "green"
-    }
-  }
-  
-  return(colourVec)
-}
-
 # Function to generate colours based on region
 makeIrishRegionColours <- function(realNames){
   
@@ -620,91 +528,97 @@ makeIrishRegionColours <- function(realNames){
     # Check if part of a word is in the name and assign a colour
     if(grepl("NIreland", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "black"
     } else if(grepl("Louth", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "red"
+    } else if(grepl("Westmeath", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "red"
     } else if(grepl("Cavan", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red" 
+      colourVec[index] <- "black" 
     } else if(grepl("Ireland", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "orange"
+      colourVec[index] <- "darkorange2"
     } else if(grepl("Leitrim", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue"    
+      colourVec[index] <- "deepskyblue3"    
     } else if(grepl("Kerry", colourVec[index]) == TRUE){
         
-      colourVec[index] <- "orange"
+      colourVec[index] <- "darkorange2"
     } else if(grepl("Clare", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "orange"
+      colourVec[index] <- "darkorange2"
     } else if(grepl("Wexford", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "darkorange2"
     } else if(grepl("Derry", colourVec[index]) == TRUE){
         
-      colourVec[index] <- "red"
+      colourVec[index] <- "black"
     } else if(grepl("Monaghan", colourVec[index]) == TRUE){
         
-      colourVec[index] <- "red"
+      colourVec[index] <- "black"
     } else if (grepl("Meath", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "red"
       
     } else if(grepl("Sligo", colourVec[index]) == TRUE){
         
-      colourVec[index] <- "blue"
+      colourVec[index] <- "deepskyblue3"
     } else if(grepl("Laois", colourVec[index]) == TRUE){
         
-      colourVec[index] <- "green"
+      colourVec[index] <- "red"
     } else if(grepl("Tipperary", colourVec[index]) == TRUE){
         
-        colourVec[index] <- "orange"
+        colourVec[index] <- "darkorange2"
     } else if(grepl("Kildare", colourVec[index]) == TRUE){
           
-        colourVec[index] <- "green"
+        colourVec[index] <- "red"
     } else if(grepl("Mayo", colourVec[index]) == TRUE){
           
-        colourVec[index] <- "blue"
+        colourVec[index] <- "deepskyblue3"
     } else if(grepl("Limerick", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "orange"
+      colourVec[index] <- "darkorange2"
     } else if(grepl("Wicklow", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "red"
     } else if(grepl("Cork", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "orange"
+      colourVec[index] <- "darkorange2"
     } else if(grepl("NA", colourVec[index]) == TRUE){
       
       colourVec[index] <- "black"
 
     } else if(grepl("Donegal", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "black"
     } else if(grepl("CIT", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "orange"
+      colourVec[index] <- "darkorange2"
+    } else if(grepl("Waterford", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "darkorange2"
     } else if (grepl("MAPK10", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "purple"
+      colourVec[index] <- "grey40"
     } else if (grepl("Dublin", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "red"
     } else if (grepl("Laois", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "red"
     } else if (grepl("Kilkenny", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "green"
+      colourVec[index] <- "red"
 
     } else if (grepl("Galway", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue"
+      colourVec[index] <- "deepskyblue3"
     } else if (grepl("Roscommon", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "blue"
+      colourVec[index] <- "deepskyblue3"
     } else {
       
       colourVec[index] <- "black"
@@ -787,6 +701,56 @@ toDropInternationalTips <- function(tiplabel){
   return(dropVector)
 }
 
+# Function to plot Irish tree
+plotIrishTree <- function(tree, tipcols){
+  
+  # Set margins to nothing
+  par(mar=c(0,0,0,0))
+  
+  # Plot the national tree
+  plot.phylo(tree, edge.width = 0.2, font = 1, label.offset = 0.2, 
+             tip.color = tipcols,
+             align.tip.label = FALSE, type="phylogram", cex = 0.5)
+  
+  # Add a legend
+  legend("right", legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
+         text.col = c("red", "deepskyblue3", "black", "darkorange2"), bty = "n", cex = 1.0,
+         y.intersp = 0.5)
+  
+  # Add the SNP scale
+  add.scale.bar(cex = 2.0)
+}
+
+# Function to plot Irish fan tree with corner map
+plotIrishFan <- function(tree, tipcols, polygonCoords, counties){
+  
+  # Set margins to nothing and set figure parameters
+  par(mar=c(0,0,0,0), fig=c(0,1,0,1))
+  
+  # Plot national tree as a fan
+  plot.phylo(tree, edge.width = 2.5, font = 1, label.offset = 0.2, 
+             tip.color = tipcols, edge.color = "grey50",
+             align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
+  
+  #Add shaped tip labels
+  tiplabels(pch = 18, col = tipcols,  cex = 2.5)
+  
+  # Add the SNP scale
+  add.scale.bar(cex = 1.5, lcol = "grey50", lwd = 3)
+  text(x=-70,y=-120, "SNPs", cex = 3)
+  
+  # Add a legend
+  legend(x=-110,y=100, legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
+         text.col = c("red", "deepskyblue3", "black", "darkorange2"), bty = "n", cex = 2,
+         y.intersp = 0.6)
+  
+  # Set figure parameters to top right corner 
+  par(fig=c(0.8,1,0.8,1), new=T)
+  
+  # Plot the map in top right - REQUIRES OTHER SCRIPT
+  smallMap(polygonCoords, counties)
+}
+
 # Function to pull out tiplabels corresponding to a VNTR type
 findVNTRs <- function(tiplabel, VNTR){
   
@@ -797,7 +761,7 @@ findVNTRs <- function(tiplabel, VNTR){
   for(index in 1:length(tiplabel)){
     
     # Split the string and take the 3rd value
-    vntrInfo <- strsplit(tiplabel[index], split = "_")[[1]][3]
+    vntrInfo <- strsplit(tiplabel[index], split = "_")[[1]][4]
     
     # Skip if it's an NA
     if(is.na(vntrInfo) == TRUE){
@@ -978,13 +942,13 @@ getWithinBetween <- function(mat, name, shuffle){
 getNames <- function(mat){
   
   # Create a pair of vectors for row and col names
-  rowcolNames <- rep(NA, length(rownames(mat)))
+  rowcolNames <- rep(NA, length(colnames(mat)))
   
   # Loop thru and split off what's needed and fill into vectors
   for(index in 1:length(rowcolNames)){
     
     # Store row name
-    vRow <- strsplit(rownames(mat)[index], split = "_")[[1]][3]
+    vRow <- strsplit(rownames(mat)[index], split = "_")[[1]][4]
     
     rowcolNames[index] <- vRow
   }
@@ -995,13 +959,16 @@ getNames <- function(mat){
 getHerdNames <- function(mat){
   
   # Create a pair of vectors for row and col names
-  rowcolNames <- rep(NA, length(rownames(mat)))
+  rowcolNames <- rep(NA, length(colnames(mat)))
   
   # Loop thru and split off what's needed and fill into vectors
   for(index in 1:length(rowcolNames)){
     
     # Store row name
-    vRow <- strsplit(rownames(mat)[index], split = "_")[[1]][2]
+    one <- strsplit(colnames(mat)[index], split = "_")[[1]][2]
+    two <- strsplit(colnames(mat)[index], split = "_")[[1]][3]
+    
+    vRow <- paste(one,"_",two)
     
     rowcolNames[index] <- vRow
   }
@@ -1017,7 +984,7 @@ processHerds <- function(herds){
   # Loop thru the herdnames
   for(index in 1:length(herds)){
     
-    counties[index] <- substr(herds[index], 1, nchar(herds[index])-1)
+    counties[index] <- strsplit(herds[index], split = "_")[[1]][1]
   }
   return(counties)
 }
@@ -1032,7 +999,11 @@ isolateHerder <- function(tiplabel){
   for(index in 1:length(tiplabel)){
     
     # Split the string and take the 3rd value
-    herdInfo <- strsplit(tiplabel[index], split = "_")[[1]][2]
+    one <- strsplit(tiplabel[index], split = "_")[[1]][2]
+    two <- strsplit(tiplabel[index], split = "_")[[1]][3]
+    
+    herdInfo <- paste(one, "_", two)
+    
     
     # Skip if it's an NA
     if(is.na(herdInfo) == TRUE){
@@ -1047,4 +1018,21 @@ isolateHerder <- function(tiplabel){
   }
   
   return(finderVec)
+}
+
+# Function to pull out birth counties from matrix names
+getBirthCounties <- function(mat){
+  
+  # Create a pair of vectors for row and col names
+  rowcolNames <- rep(NA, length(colnames(mat)))
+  
+  # Loop thru and split off what's needed and fill into vectors
+  for(index in 1:length(rowcolNames)){
+    
+    # Store row name
+    vRow <- strsplit(colnames(mat)[index], split = "_")[[1]][5]
+    
+    rowcolNames[index] <- vRow
+  }
+  return(rowcolNames)
 }
