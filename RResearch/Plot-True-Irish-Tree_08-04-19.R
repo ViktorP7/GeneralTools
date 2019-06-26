@@ -93,14 +93,16 @@ corktipColours <- makeIrishRegionColours(cork10$tip.label)
 par(mar=c(0,0,0,0), fig=c(0,1,0,1))
 
 # Plot Cork 10
-plot.phylo(cork10, edge.width = 0.2, font = 1, label.offset = 0.2, 
+plot.phylo(cork10, edge.width = 2, font = 1, label.offset = 0.2, 
            tip.color = corktipColours,
-           align.tip.label = FALSE, type="phylogram", cex = 0.7)
+           align.tip.label = FALSE, type="phylogram", cex = 0.7, show.tip.label = FALSE,
+           col="grey50")
 
+tiplabels(pch = 17, col = "darkorange3",  cex = 2.5)
 
 # Add the SNP scale
-add.scale.bar(x=6,y=10,cex = 1.0)
-text(x=6.5,y=9, "SNP")
+add.scale.bar(x=3,y=10,cex = 1.0, lwd = 2)
+text(x=3.5,y=9, "SNP")
 
 dev.off()
 
@@ -232,7 +234,7 @@ xmax <- max(medVector, diffMedWB)
 
 quantiles <- quantile(medVector, c(0.025, 0.975))
 
-h <- hist(medVector, breaks=30, plot=FALSE)
+h <- hist(medVector, breaks=10, plot=FALSE)
 
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
