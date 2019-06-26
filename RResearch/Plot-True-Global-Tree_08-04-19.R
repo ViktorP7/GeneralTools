@@ -1,7 +1,8 @@
-# 11/03/19 modified for a RAxML tree input file
+# 11-03-19 modified for a RAxML tree input file
 # 25-03-19 modified for extra isolates
 # 08-04-19 modified for better root and to find VNTR group distances
 # 12-06-19 modified for new influx of data
+# 26-06-19 tidied up some of the code
 
 # Load packages
 library(ape)
@@ -41,13 +42,10 @@ realNames <- getCVRLLabels(isoCVRLTable, TheTree)
 # Update the names in the tree
 TheTree$tip.label <- realNames
 
-# Plot the tree
+# Plot the tree - used for visual reference to remove/extract clades as appropriate later
 plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01, 
            show.tip.label = TRUE, cex = 0.1)
 nodelabels(cex = 0.05, frame = "none")
-tiplabels()
-
-pdf("CombinedJune2019Trees.pdf", width=20, height=20)
 
 # Root the tree at 466 - ancestor rooted in the Bryant paper
 rootree <- root(TheTree, node = 466)
@@ -71,31 +69,9 @@ extractedTree$edge.length <- roundedSNPs
 # Get the colours
 tipColours <- makeRegionColours(extractedTree$tip.label)
 
-# Plot the tree
-plot.phylo(extractedTree, edge.width = 0.2, font = 1, label.offset = 0.2, 
-           tip.color = tipColours,
-           align.tip.label = FALSE, type="phylogram", cex = 0.2)
+# Plot the trees
+plotGlobalTrees(extractedTree, tipColours)
 
-# Add the SNP scale
-add.scale.bar(cex = 3)
-
-# Plot international tree as a fan
-plot.phylo(extractedTree, edge.width = 2, font = 1, label.offset = 0.2, 
-           tip.color = tipColours, edge.color = "grey50",
-           align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
-
-#Add shaped tip labels
-tiplabels(pch = 18, col = tipColours,  cex = 2)
-
-# Add the SNP scale
-add.scale.bar(x=30,y=-120, cex = 3,lcol = "grey50", lwd = 3)
-text(x=60,y=-130, "SNPs", cex = 3)
-
-# Add a legend
-legend(x=40, y=140, legend = c("Ireland", "Europe", "World"), 
-       text.col = c("darkgreen", "blue", "darkorange3"), bty = "n", cex = 2,y.intersp = 0.6)
-
-dev.off()
 
 #### Functions ####
 
@@ -282,3 +258,33 @@ makeRegionColours <- function(realNames){
   
   return(colourVec)
 }
+
+# Function to plot trees
+plotGlobalTrees <- function(tree, tipCols){
+  
+  # Plot the tree
+  plot.phylo(tree, edge.width = 0.2, font = 1, label.offset = 0.2, 
+             tip.color = tipCols,
+             align.tip.label = FALSE, type="phylogram", cex = 0.2)
+  
+  # Add the SNP scale
+  add.scale.bar(cex = 3)
+  
+  # Plot international tree as a fan
+  plot.phylo(tree, edge.width = 2, font = 1, label.offset = 0.2, 
+             tip.color = tipCols, edge.color = "grey50",
+             align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
+  
+  #Add shaped tip labels
+  tiplabels(pch = 18, col = tipCols,  cex = 2)
+  
+  # Add the SNP scale
+  add.scale.bar(x=30,y=-120, cex = 3,lcol = "grey50", lwd = 3)
+  text(x=60,y=-130, "SNPs", cex = 3)
+  
+  # Add a legend
+  legend(x=40, y=140, legend = c("Ireland", "Europe", "World"), 
+         text.col = c("darkgreen", "blue", "darkorange3"), bty = "n", cex = 2,y.intersp = 0.6)
+  
+}
+
