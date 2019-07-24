@@ -1,8 +1,14 @@
-# 11/03/19 modified for a RAxML tree input file
+#### Changelog ####
+
+# 11-03-19 modified for a RAxML tree input file
 # 25-03-19 modified for extra isolates
 # 08-04-19 modified for better root and to find VNTR group distances
 # 07-05-19 modified for new metadata
 # 12-06-19 modified for new data
+# 26-06-19 cleaned up code
+# 24-07-19 cleaned up code & updated with mapping functions
+
+#### Loading of packages & files ####
 
 # Load packages
 library(ape)
@@ -13,6 +19,14 @@ library(scales)
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
 pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_10-06-19"
+pathCoords <- "C:/Users/UCD/Documents/Lab/Cork MAP/PolygonCoords/"
+
+# Vector with all county names for the map
+counties <- c("Antrim","Armagh","Carlow","Cavan","Clare","Cork","Donegal","Down",
+              "Dublin","Fermanagh","Galway","Kerry","Kildare","Kilkenny","Laois","Leitrim",
+              "Limerick","Derry","Longford","Louth","Mayo","Meath","Monaghan","Offaly",
+              "Roscommon","Sligo","Tipperary","Tyrone","Waterford","Westmeath","Wexford","Wicklow")
+
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso,
@@ -27,6 +41,7 @@ isoCVRLTable <- read.table(pathNewIso,
                            sep = ",",
                            stringsAsFactors=FALSE, # Strings like "Cork 4" are not designated as factors
                            check.names=FALSE) # Names left as they are, no dots inserted
+#### Tree-vis ####
 
 # Read in tree
 TheTree <- read.tree(pathTree)
@@ -43,13 +58,10 @@ realNames <- getCVRLLabels(isoCVRLTable, TheTree)
 # Update the names in the tree
 TheTree$tip.label <- realNames
 
-# Plot the tree
+# Plot the tree for visualisation to determine clade extraction
 plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01, 
            show.tip.label = TRUE, cex = 0.1)
 nodelabels(cex = 0.05, frame = "none")
-tiplabels()
-
-pdf("June2019Tree.pdf", width=20, height=20)
 
 # Root the tree at 466 - ancestor rooted in the Bryant paper
 rootree <- root(TheTree, node = 466)
@@ -80,31 +92,20 @@ tipColours <- makeIrishRegionColours(irishOnlytree$tip.label)
 # Plot Irish tree
 plotIrishTree(irishOnlytree, tipColours)
 
+# Get polygon coordinates for map plotting
+polygonCoords <- getPolygonCoords(counties, pathCoords)
+
+# Calculate limits of plot
+ranges <- mapLimits(polygonCoords, counties)
+
 # Plot Irish fan tree
-plotIrishFan(irishOnlytree, tipColours, polygonCoords, counties)
+plotIrishFan(irishOnlytree, tipColours, polygonCoords, counties, ranges)
 
 # Extract Cork 10 herd only
 cork10 <- extract.clade(irishOnlytree, node = 165)
 
-# Get the colours
-corktipColours <- makeIrishRegionColours(cork10$tip.label)
-
-# Refresh par
-par(mar=c(0,0,0,0), fig=c(0,1,0,1))
-
-# Plot Cork 10
-plot.phylo(cork10, edge.width = 2, font = 1, label.offset = 0.2, 
-           tip.color = corktipColours,
-           align.tip.label = FALSE, type="phylogram", cex = 0.7, show.tip.label = FALSE,
-           col="grey50")
-
-tiplabels(pch = 17, col = "darkorange3",  cex = 2.5)
-
-# Add the SNP scale
-add.scale.bar(x=3,y=10,cex = 1.0, lwd = 2)
-text(x=3.5,y=9, "SNP")
-
-dev.off()
+# Plot Cork problem herd
+plotProblemHerd(cork10)
 
 #### Post Tree Analysis ####
 
@@ -134,282 +135,71 @@ allINMV <- c(inmv1, inmv2, others)
 sortedAll <- sort(allINMV)
 
 # Filter out all INMVs
-inmvDist <- allDist[allINMV, allINMV]
+inmvDist <- allDist[sortedAll, sortedAll]
 
-#### No need for these below ####
-
-# Filter out type 1 INMVs
-inmv1Dist <- allDist[inmv1, inmv1]
-
-# Filter out type 2 INMVs
-inmv2Dist <- allDist[inmv2, inmv2]
-
-# Find the max distances
-maxINMV1 <- max(inmv1Dist, na.rm = TRUE)
-maxINMV2 <- max(inmv2Dist, na.rm = TRUE)
-maxAll <- max(inmvDist, na.rm = TRUE)
-
-# Find the min distances
-minINMV1 <- min(inmv1Dist, na.rm = TRUE)
-minINMV2 <- min(inmv2Dist, na.rm = TRUE)
-minAll <- min(inmvDist, na.rm = TRUE)
-
-# Find the median value
-medINMV1 <- median(inmv1Dist, na.rm = TRUE)
-medINMV2 <- median(inmv2Dist, na.rm = TRUE)
-medAll <- median(inmvDist, na.rm = TRUE)
-
-# Find the mean value
-meanINMV1 <- floor(mean(inmv1Dist, na.rm = TRUE))
-meanINMV2 <- floor(mean(inmv2Dist, na.rm = TRUE))
-meanAll <- floor(mean(inmvDist, na.rm = TRUE))
-
-# Find the frequency of SNP distances
-allFreqs <- findSNPFreqs(inmvDist)
-
-# Add up all the freqs from previous rows
-addedAllFreqs <- allFreqs
-
-for(row in 2:nrow(allFreqs)){
-  
-  addedAllFreqs[row,1] <- allFreqs[row,1] + allFreqs[row-1,1]
-  addedAllFreqs[row,2] <- allFreqs[row,2] + allFreqs[row-1,2]
-  addedAllFreqs[row,3] <- allFreqs[row,3] + allFreqs[row-1,3]
-}
-
-# Get proportions
-propAll <- processFreqs(allFreqs)
-propAdded <- processFreqs(addedAllFreqs)
-
-# Plot the proportions - don't actually use this
-plot(propAll[,1], col = "blue", ylim = c(0,100),
-     ylab = "Frequency", xlab = "SNPs Difference", xaxt = "n")
-axis(1, at=1:10, labels = rownames(propAll), las = 2)
-points(propAll[,2], col = "red")
-lines(propAll[,1], col = "red")
-lines(propAll[,2], col = "blue", lty = 2)
-
-#### Continue using these below for VNTR ####
-
-# Process distance matrices for each VNTR type
+# Process distance matrices 
 inmvDist[upper.tri(inmvDist)] <- NA
 
 # Get names of matrix
-nameVec <- getNames(inmvDist)
+nameVec <- getNames(inmvDist, "VNTR")
 
 # Get the within and between distances
 distList <- getWithinBetween(inmvDist, nameVec, FALSE)
 
-# Plot a boxplot comparing within and between
-boxplot(distList$Within, distList$Between, 
-        main = "SNP distances within & between VNTR types", 
-        names = c("Within", "Between"),
-        ylab = "SNP Difference",
-        las = 1)
-stripchart(distList$Within, add = TRUE, at =1, 
-           method = "jitter", vertical = TRUE, col = alpha("blue",0.4),
-           pch = 4)
-stripchart(distList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
-           pch = 4)
+# Plot the within between plot
+plotWB(distList, "VNTR types")
 
-# Do with median differences
-diffMedWB <- median(distList$Between) - median(distList$Within)
+# Run permutation and plot the plot
+runplotPer(distList, "VNTR", inmvDist, nameVec, TRUE, 10000, 10)
 
-# Create a vector to store 10k values
-medVector <- rep(NA, 10000)
-
-# Do the same except this time shuffle 10k times
-system.time(for(run in 1:10000){
-  distRunnerList <- getWithinBetween(inmvDist, nameVec, TRUE)
-  
-  # Get the difference of the means
-  medVector[run] <- median(distRunnerList$Between) - median(distRunnerList$Within) 
-  
-})
-
-# Plot as histogram
-xmin <- min(medVector, diffMedWB)
-xmax <- max(medVector, diffMedWB)
-
-quantiles <- quantile(medVector, c(0.025, 0.975))
-
-h <- hist(medVector, breaks=10, plot=FALSE)
-
-cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
-
-plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Isolate VNTR Type", xlim=c(xmin, 10), cex.axis=0.8, las=1)
-lines(c(diffMedWB,diffMedWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(8, 750, cex = 0.9,
-     paste("Actual Value\n= ", round(diffMedWB, digits=2)), col="blue")
-
-#### Do with herd names now instead of VNTR, get herds first ####
-allHerds <- isolateHerder(irishOnlytree$tip.label)
-
-# Get herd distances
-herdDist <- allDist[allHerds, allHerds]
-
-# Process distance matrices for each herd
-herdDist[upper.tri(herdDist)] <- NA
-
+#### Do with herd names now instead of VNTR####
 # Get the herd names
-herdNames <- getHerdNames(herdDist)
+herdNames <- getNames(allDist, "Herd")
 
 # Get the within and between distances for herds
-distHerdList <- getWithinBetween(herdDist, herdNames, FALSE)
+distHerdList <- getWithinBetween(allDist, herdNames, FALSE)
 
-# Get the difference of the medians
-diffMedHerdWB <- median(distHerdList$Between) - median(distHerdList$Within)
+# Plot the within between plot
+plotWB(distHerdList, "herds")
 
-# Plot a boxplot comparing within and between for herds
-boxplot(distHerdList$Within, distHerdList$Between, 
-        main = "SNP distances within & between herds", 
-        names = c("Within", "Between"),
-        ylab = "SNP Difference",
-        las = 1)
-stripchart(distHerdList$Within, add = TRUE, at =1, 
-           method = "jitter", vertical = TRUE, col = alpha("blue",1),
-           pch = 4)
-stripchart(distHerdList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
-           pch = 4)
+# Run permutation and plot the plot
+runplotPer(distHerdList, "Herd", allDist, herdNames, TRUE, 10000, 30)
 
-# Create a vector to store 10k values
-medHerdVector <- rep(NA, 10000)
+#### Now with county ####
+countyNames <- getNames(allDist, "CCounty")
 
-# Do the same except this time shuffle 10k times
-system.time(for(run in 1:10000){
-  distHerdRunnerList <- getWithinBetween(herdDist, herdNames, TRUE)
-  
-  # Get the difference of the medians
-  medHerdVector[run] <- median(distHerdRunnerList$Between) - median(distHerdRunnerList$Within) 
-  
-})
-
-# Plot as histogram
-xmin <- min(medHerdVector, diffMedHerdWB)
-xmax <- max(medHerdVector, diffMedHerdWB)
-
-quantiles <- quantile(medHerdVector, c(0.025, 0.975))
-
-h <- hist(medHerdVector, breaks=30, plot=FALSE)
-
-cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
-
-plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Isolate Herd", xlim=c(xmin, 190), cex.axis=0.8, las=1)
-lines(c(diffMedHerdWB,diffMedHerdWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(165, 750, cex = 0.9,
-     paste("Actual Value\n= ", round(diffMedHerdWB, digits=2)), col="blue")
-
-# Now do the same but look at the county level instead of herd
-countyNames <- processHerds(herdNames)
 # Change a few manually
 countyNames[c(84,85,118, 119, 120, 74)] <- "Cork"
 countyNames[c(8,15)] <- "North1"
 countyNames[c(142,143)] <- "North2"
+countyNames[9] <- "Other"
 
 # Get the within and between distances for counties
-distCountyList <- getWithinBetween(herdDist, countyNames, FALSE)
+distCountyList <- getWithinBetween(allDist, countyNames, FALSE)
 
-# Get the difference of the medians
-diffMedCountyWB <- median(distCountyList$Between) - median(distCountyList$Within)
+# Plot the within between plot
+plotWB(distCountyList, "counties")
 
-# Plot a boxplot comparing within and between for counties
-boxplot(distCountyList$Within, distCountyList$Between, 
-        main = "SNP distances within & between counties", 
-        names = c("Within", "Between"),
-        ylab = "SNP Difference",
-        las = 1)
-stripchart(distCountyList$Within, add = TRUE, at =1, 
-           method = "jitter", vertical = TRUE, col = alpha("blue",0.6),
-           pch = 4)
-stripchart(distCountyList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
-           pch = 4)
+# Run permutation and plot the plot
+runplotPer(distCountyList, "County", allDist, countyNames, TRUE, 10000, 30)
 
-# Create a vector to store 10k values
-medCountyVector <- rep(NA, 10000)
+#### Look at the birth county now ####
+birthcountyNames <- getNames(allDist, "BCounty")
 
-# Do the same except this time shuffle 10k times
-system.time(for(run in 1:10000){
-  distCountyRunnerList <- getWithinBetween(herdDist, countyNames, TRUE)
-  
-  # Get the difference of the medians
-  medCountyVector[run] <- median(distCountyRunnerList$Between) - median(distCountyRunnerList$Within) 
-  
-})
-
-# Plot as histogram
-xmin <- min(medCountyVector, diffMedCountyWB)
-xmax <- max(medCountyVector, diffMedCountyWB)
-
-quantiles <- quantile(medCountyVector, c(0.025, 0.975))
-
-h <- hist(medCountyVector, breaks=30, plot=FALSE)
-
-cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
-
-plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Isolate County", xlim=c(xmin, 80), cex.axis=0.8, las=1)
-lines(c(diffMedCountyWB,diffMedCountyWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(65, 750, cex = 0.9,
-     paste("Actual Value\n= ", round(diffMedCountyWB, digits=2)), col="blue")
-
-# Look at the birth county now
-birthcountyNames <- getBirthCounties(herdDist)
 # Change a few manually
 birthcountyNames <- birthcountyNames[-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143)]
 
-newHerdDist <- herdDist[-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143),-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143)]
+# Edit allDist to exclude the excluded isolates
+newallDist <- allDist[-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143),-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143)]
 
 # Get the within and between distances for counties
-distbirthCountyList <- getWithinBetween(newHerdDist, birthcountyNames, FALSE)
+distbirthCountyList <- getWithinBetween(newallDist, birthcountyNames, FALSE)
 
-# Get the difference of the medians
-diffMedbirthCountyWB <- median(distbirthCountyList$Between) - median(distbirthCountyList$Within)
+# Plot the within between plot
+plotWB(distbirthCountyList, "birth counties")
 
-# Plot a boxplot comparing within and between for counties
-boxplot(distbirthCountyList$Within, distbirthCountyList$Between, 
-        main = "SNP distances within & between birth counties", 
-        names = c("Within", "Between"),
-        ylab = "SNP Difference",
-        las = 1)
-stripchart(distbirthCountyList$Within, add = TRUE, at =1, 
-           method = "jitter", vertical = TRUE, col = alpha("blue",0.6),
-           pch = 4)
-stripchart(distbirthCountyList$Between, add = TRUE, at =2, 
-           method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
-           pch = 4)
-
-# Create a vector to store 10k values
-medbirthCountyVector <- rep(NA, 10000)
-
-# Do the same except this time shuffle 10k times
-system.time(for(run in 1:10000){
-  distbirthCountyRunnerList <- getWithinBetween(newHerdDist, birthcountyNames, TRUE)
-  
-  # Get the difference of the medians
-  medbirthCountyVector[run] <- median(distbirthCountyRunnerList$Between) - median(distbirthCountyRunnerList$Within) 
-  
-})
-
-# Plot as histogram
-xmin <- min(medbirthCountyVector, diffMedbirthCountyWB)
-xmax <- max(medCountyVector, diffMedCountyWB)
-
-quantiles <- quantile(medbirthCountyVector, c(0.025, 0.975))
-
-h <- hist(medbirthCountyVector, breaks=30, plot=FALSE)
-
-cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
-
-plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-     main="Isolate Birth County", xlim=c(xmin, 50), cex.axis=0.8, las=1)
-lines(c(diffMedbirthCountyWB,diffMedbirthCountyWB), c(0, max(h$counts)), col="blue", lwd=3)
-text(35, 750, cex = 0.9,
-     paste("Actual Value\n= ", round(diffMedbirthCountyWB, digits=2)), col="blue")
+# Run permutation and plot the plot
+runplotPer(distbirthCountyList, "Birth County", newallDist, birthcountyNames, TRUE, 100, 30)
 ###########################################################################
 ###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###
 ###########################################################################
@@ -723,8 +513,91 @@ plotIrishTree <- function(tree, tipcols){
   add.scale.bar(cex = 2.0)
 }
 
+# Function to acquire polygon coordinates for map plot
+getPolygonCoords <- function(counties, path) { # input is county list
+  
+  polygonCoords <- list() # empty list to store gps data for each county
+  
+  for(index in 1:length(counties)) { # for each county
+    
+    fileName <- paste(path, "PolygonCoords_", counties[index], ".txt", sep="" )
+    # paste general path to counties, and the .txt ending to get path for each
+    
+    # read in the values for each county into the appropriate list segment
+    polygonCoords[[counties[index]]] <- read.table(fileName, 
+                                                   header = TRUE, sep = "\t")
+  }
+  return(polygonCoords)
+}
+
+# Function to get map limits
+mapLimits <- function(polygonCoords, counties) {
+  
+  # Initialise vectors to store the mins and maxes of each county
+  minX <- rep(NA, length(counties))
+  maxX <- rep(NA, length(counties))
+  minY <- rep(NA, length(counties))
+  maxY <- rep(NA, length(counties))
+  
+  # For each county, calculate the mins and maxes, and populate the empty vectors
+  for(index in 1:length(counties)) {
+    
+    minX[index] <- min(polygonCoords[[counties[index]]][, "X"])
+    maxX[index] <- max(polygonCoords[[counties[index]]][, "X"])
+    minY[index] <- min(polygonCoords[[counties[index]]][, "Y"])
+    maxY[index] <- max(polygonCoords[[counties[index]]][, "Y"])
+  }
+  
+  # Get the overall mins and maxes of X and Y to be able to set plot limits
+  ranges <- c(min(minX), max(maxX), min(minY), max(maxY))
+  
+  return(ranges)
+}
+
+# Function to plot small map of Ireland
+smallMap <- function(polygonCoords, counties, ranges) {
+  
+  # Create empty plot, with input of limits from above function
+  plot(x=NA, y=NA,
+       xlim = c(ranges[1], ranges[2]), 
+       ylim = c(ranges[3], ranges[4]),
+       main = "", xlab = "", ylab = "",
+       bty = "n", axes = FALSE)
+  
+  
+  for(index in 1:length(counties)) {
+    
+    # Check what colour needs to be assigned 
+    if(counties[index] == "Donegal" ||counties[index] == "Derry" 
+       ||counties[index] == "Monaghan" ||counties[index] == "Cavan"||counties[index] == "Fermanagh"
+       ||counties[index] == "Tyrone"||counties[index] == "Armagh"||counties[index] == "Down"
+       ||counties[index] == "Antrim"){
+      
+      colour = "gray20"
+    } else if(counties[index] == "Mayo" || counties[index] =="Roscommon" 
+              ||counties[index] == "Sligo" ||counties[index] == "Leitrim"
+              ||counties[index] == "Galway"){
+      
+      colour = "deepskyblue3"
+    } else if(counties[index] == "Clare" ||counties[index] == "Kerry" 
+              ||counties[index] == "Cork" ||counties[index] == "Limerick" 
+              ||counties[index] == "Tipperary" ||counties[index] == "Waterford"){
+      
+      colour = "darkorange2"
+    } else {
+      
+      colour = "red"
+    }
+    
+    # Plot the polygon of the current county
+    polygon(x=polygonCoords[[counties[index]]][, "X"],
+            y=polygonCoords[[counties[index]]][, "Y"],
+            col = colour)
+  }
+}
+
 # Function to plot Irish fan tree with corner map
-plotIrishFan <- function(tree, tipcols, polygonCoords, counties){
+plotIrishFan <- function(tree, tipcols, polygonCoords, counties, ranges){
   
   # Set margins to nothing and set figure parameters
   par(mar=c(0,0,0,0), fig=c(0,1,0,1))
@@ -750,7 +623,25 @@ plotIrishFan <- function(tree, tipcols, polygonCoords, counties){
   par(fig=c(0.8,1,0.8,1), new=T)
   
   # Plot the map in top right - REQUIRES OTHER SCRIPT
-  smallMap(polygonCoords, counties)
+  smallMap(polygonCoords, counties, ranges)
+}
+
+# Function to plot problem herd
+plotProblemHerd <- function(tree){
+  
+  # Refresh par
+  par(mar=c(0,0,0,0), fig=c(0,1,0,1))
+  
+  # Plot tree
+  plot.phylo(tree, edge.width = 2, font = 1, label.offset = 0.2,
+             align.tip.label = FALSE, type="phylogram", cex = 0.7, show.tip.label = FALSE,
+             col="grey50")
+  
+  tiplabels(pch = 17, col = "darkorange3",  cex = 2.5)
+  
+  # Add the SNP scale
+  add.scale.bar(x=3,y=10,cex = 1.0, lwd = 2)
+  text(x=3.5,y=9, "SNP")
 }
 
 # Function to pull out tiplabels corresponding to a VNTR type
@@ -778,105 +669,6 @@ findVNTRs <- function(tiplabel, VNTR){
   }
   
   return(finderVec)
-}
-
-# Function to count frequency of SNP difference 
-findSNPFreqs <- function(mat){
-  
-  # Initialise a matrix to store freq counts
-  counter <- matrix(data = 0, nrow = 10, ncol = 3, 
-                    dimnames = list(c("<5", "<10", "<20", 
-                                      "<30", "<40", "<50",
-                                      "<75", "<100", "<200", "<250"),
-                                    c("Same", "NotSame", "Total")))
-  
-  # Loop thru each row of the input and count how many times each appears
-  for(row in 1:nrow(mat)){
-    
-    vRow <- strsplit(rownames(mat)[row], split = "_")[[1]][3]
-    
-    for(col in 1:ncol(mat)){
-      vCol <- strsplit(colnames(mat)[col], split = "_")[[1]][3]
-      
-      if(vRow == vCol){
-        
-        if(is.na(mat[row,col]) == TRUE){
-          
-          next
-          
-        }else if(mat[row,col] < 5){
-          counter[1,1] <- counter[1,1] + 1
-        }else if(mat[row,col] < 10){
-          counter[2,1] <- counter[2,1] + 1
-        }else if(mat[row,col] < 20){  
-          counter[3,1] <- counter[3,1] + 1
-        }else if(mat[row,col] < 30){
-          counter[4,1] <- counter[4,1] + 1
-        }else if(mat[row,col] < 40){
-          counter[5,1] <- counter[5,1] + 1
-        }else if(mat[row,col] < 50){
-          counter[6,1] <- counter[6,1] + 1
-        }else if(mat[row,col] < 75){
-          counter[7,1] <- counter[7,1] + 1
-        }else if(mat[row,col] < 100){
-          counter[8,1] <- counter[8,1] + 1
-        }else if(mat[row,col] < 200){
-          counter[9,1] <- counter[9,1] + 1
-        }else if(mat[row,col] < 250){
-          counter[10,1] <- counter[10,1] + 1
-        }  
-      } else{
-        
-        if(mat[row,col] < 5){
-          counter[1,2] <- counter[1,2] + 1
-        }else if(mat[row,col] < 10){
-          counter[2,2] <- counter[2,2] + 1
-        }else if(mat[row,col] < 20){  
-          counter[3,2] <- counter[3,2] + 1
-        }else if(mat[row,col] < 30){
-          counter[4,2] <- counter[4,2] + 1
-        }else if(mat[row,col] < 40){
-          counter[5,2] <- counter[5,2] + 1
-        }else if(mat[row,col] < 50){
-          counter[6,2] <- counter[6,2] + 1
-        }else if(mat[row,col] < 75){
-          counter[7,2] <- counter[7,2] + 1
-        }else if(mat[row,col] < 100){
-          counter[8,2] <- counter[8,2] + 1
-        }else if(mat[row,col] < 200){
-          counter[9,2] <- counter[9,2] + 1
-        }else if(mat[row,col] < 250){
-          counter[10,2] <- counter[10,2] + 1
-        }  
-        
-      }
-    }
-  }
-  
-  # Get the totals
-  for(row in 1:nrow(counter)){
-    
-    counter[row,3] <- counter[row,1] + counter[row,2]
-  }
-  
-  return(counter)
-}
-
-# Function to process SNP distance matrix and give percentage proportions
-processFreqs <- function(freqs){
-  
-  # Duplicate the input
-  propFreqs <- freqs
-  
-  # Loop thru and get proportions
-  for(row in 1:nrow(freqs)){
-    
-    propFreqs[row,1] <- freqs[row,1]/freqs[row,3]*100
-    propFreqs[row,2] <- freqs[row,2]/freqs[row,3]*100
-    propFreqs[row,3] <- 100
-  }
-  
-  return(propFreqs)
 }
 
 # Function to pull out within and between SNP distances
@@ -940,101 +732,113 @@ getWithinBetween <- function(mat, name, shuffle){
   return(withinBetween)        
 }     
 
-# Function to pull out matrix names and simplify to VNTR types
-getNames <- function(mat){
+# Function to pull out matrix names and simplify to chosen
+getNames <- function(mat, chosen){
   
-  # Create a pair of vectors for row and col names
+  # Create a vector for names
   rowcolNames <- rep(NA, length(colnames(mat)))
   
-  # Loop thru and split off what's needed and fill into vectors
-  for(index in 1:length(rowcolNames)){
+  if(chosen == "VNTR"){
     
-    # Store row name
-    vRow <- strsplit(rownames(mat)[index], split = "_")[[1]][4]
+    # Loop thru and split off what's needed and fill into vectors
+    for(index in 1:length(rowcolNames)){
     
-    rowcolNames[index] <- vRow
-  }
-  return(rowcolNames)
-}
-
-# Function to pull out matrix names and simplify to herd names
-getHerdNames <- function(mat){
-  
-  # Create a pair of vectors for row and col names
-  rowcolNames <- rep(NA, length(colnames(mat)))
-  
-  # Loop thru and split off what's needed and fill into vectors
-  for(index in 1:length(rowcolNames)){
+      # Store row name
+      vRow <- strsplit(rownames(mat)[index], split = "_")[[1]][4]
     
-    # Store row name
-    one <- strsplit(colnames(mat)[index], split = "_")[[1]][2]
-    two <- strsplit(colnames(mat)[index], split = "_")[[1]][3]
-    
-    vRow <- paste(one,"_",two)
-    
-    rowcolNames[index] <- vRow
-  }
-  return(rowcolNames)
-}
-
-# Function to process herd names into just county names
-processHerds <- function(herds){
-  
-  # Create vector to store counties
-  counties <- rep(NA, length(herds))
-  
-  # Loop thru the herdnames
-  for(index in 1:length(herds)){
-    
-    counties[index] <- strsplit(herds[index], split = "_")[[1]][1]
-  }
-  return(counties)
-}
-
-# Function to pull out tiplabels corresponding to herds
-isolateHerder <- function(tiplabel){
-  
-  # Create vector of tips to find
-  finderVec <- c()
-  
-  # Loop thru the tips
-  for(index in 1:length(tiplabel)){
-    
-    # Split the string and take the 3rd value
-    one <- strsplit(tiplabel[index], split = "_")[[1]][2]
-    two <- strsplit(tiplabel[index], split = "_")[[1]][3]
-    
-    herdInfo <- paste(one, "_", two)
-    
-    
-    # Skip if it's an NA
-    if(is.na(herdInfo) == TRUE){
-      
-      next
-      
-    }else{
-      
-      finderVec <- append(finderVec, index)
-      
+      rowcolNames[index] <- vRow
     }
-  }
+    return(rowcolNames)
+  } else if(chosen == "Herd"){
+    
+    # Loop thru and split off what's needed and fill into vectors
+    for(index in 1:length(rowcolNames)){
+      
+      # Store row name
+      one <- strsplit(colnames(mat)[index], split = "_")[[1]][2]
+      two <- strsplit(colnames(mat)[index], split = "_")[[1]][3]
+      
+      vRow <- paste(one,"_",two)
+      
+      rowcolNames[index] <- vRow
+    }
+    return(rowcolNames)
   
-  return(finderVec)
+  } else if(chosen == "CCounty"){
+    
+    # Loop thru and split off what's needed and fill into vectors
+    for(index in 1:length(rowcolNames)){
+      
+      # Store row name
+      vRow <- strsplit(colnames(mat)[index], split = "_")[[1]][2]
+      
+      rowcolNames[index] <- vRow
+    }
+  return(rowcolNames)
+  
+  } else if(chosen == "BCounty"){
+    
+    # Loop thru and split off what's needed and fill into vectors
+    for(index in 1:length(rowcolNames)){
+      
+      # Store row name
+      vRow <- strsplit(colnames(mat)[index], split = "_")[[1]][5]
+      
+      rowcolNames[index] <- vRow
+    }
+    return(rowcolNames)
+  }
 }
 
-# Function to pull out birth counties from matrix names
-getBirthCounties <- function(mat){
+# Function to plot within between plot for a list
+plotWB <- function(listo, labelo){
   
-  # Create a pair of vectors for row and col names
-  rowcolNames <- rep(NA, length(colnames(mat)))
+  # Plot a boxplot comparing within and between
+  boxplot(listo$Within, listo$Between, 
+          main = paste("SNP distances within & between", labelo), 
+          names = c("Within", "Between"),
+          ylab = "SNP Difference",
+          las = 1)
+  stripchart(listo$Within, add = TRUE, at =1, 
+             method = "jitter", vertical = TRUE, col = alpha("blue",0.4),
+             pch = 4)
+  stripchart(listo$Between, add = TRUE, at =2, 
+             method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
+             pch = 4)
   
-  # Loop thru and split off what's needed and fill into vectors
-  for(index in 1:length(rowcolNames)){
+}
+
+# Function to run permutation and plot result
+runplotPer <- function(listo, labelo, mat, name, shuffle, num, numBreaks){
+  
+  # Median difference of within/between groups
+  diffMedWB <- median(listo$Between) - median(listo$Within)
+  
+  # Create a vector to store num values
+  medVector <- rep(NA, num)
+  
+  # Get the within/between distances for num permuted sets
+  system.time(for(run in 1:num){
+    distRunnerList <- getWithinBetween(mat, name, shuffle)
     
-    # Store row name
-    vRow <- strsplit(colnames(mat)[index], split = "_")[[1]][5]
+    # Get the difference of the means
+    medVector[run] <- median(distRunnerList$Between) - median(distRunnerList$Within) 
     
-    rowcolNames[index] <- vRow
-  }
-  return(rowcolNames)
+  })
+  
+  # Plot as histogram
+  xmin <- min(medVector, diffMedWB)
+  xmax <- max(medVector, diffMedWB)
+  
+  quantiles <- quantile(medVector, c(0.025, 0.975))
+  
+  h <- hist(medVector, breaks=numBreaks, plot=FALSE)
+  
+  cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
+  
+  plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
+       main=paste("Isolate", labelo), xlim=c(xmin, xmax), cex.axis=0.8, las=1)
+  lines(c(diffMedWB,diffMedWB), c(0, max(h$counts)), col="blue", lwd=3)
+  text(xmax-(xmax/4), num/10, cex = 0.9,
+       paste("Actual Value\n= ", round(diffMedWB, digits=2)), col="blue")
 }
