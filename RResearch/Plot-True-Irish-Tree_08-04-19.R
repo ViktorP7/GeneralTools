@@ -7,6 +7,7 @@
 # 12-06-19 modified for new data
 # 26-06-19 cleaned up code
 # 24-07-19 cleaned up code & updated with mapping functions
+# 07-08-19 modified for new data and reworked getWB function to make it faster
 
 #### Loading of packages & files ####
 
@@ -18,7 +19,7 @@ library(scales)
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_10-06-19"
+pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_06-08-19"
 pathCoords <- "C:/Users/UCD/Documents/Lab/Cork MAP/PolygonCoords/"
 
 # Vector with all county names for the map
@@ -63,22 +64,22 @@ plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01,
            show.tip.label = TRUE, cex = 0.1)
 nodelabels(cex = 0.05, frame = "none")
 
-# Root the tree at 466 - ancestor rooted in the Bryant paper
-rootree <- root(TheTree, node = 466)
+# Root the tree at 473 - ancestor rooted in the Bryant paper
+rootree <- root(TheTree, node = 473)
 
 # Drop tips for far away ancestors (silvaticum and hominissius)
-dropNumbers <- c(186,187)
+dropNumbers <- c(446,447)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
 # Extract the clade that doesn't have all the distant sheep and cows
-extractedTree <- extract.clade(droppedTree, node = 452)
+extractedTree <- extract.clade(droppedTree, node = 476)
 
 # Get rid of the non-irish isolates
 dropper <- toDropInternationalTips(extractedTree$tip.label)
 irishOnlytree <- drop.tip(extractedTree, dropper)
 
 # Convert branch lengths to SNP values
-irishOnlytree$edge.length <- irishOnlytree$edge.length * 48283
+irishOnlytree$edge.length <- irishOnlytree$edge.length * 70980
 
 # Get the rounded values o the lengths
 roundedSNPs <- round(irishOnlytree$edge.length)
@@ -102,7 +103,7 @@ ranges <- mapLimits(polygonCoords, counties)
 plotIrishFan(irishOnlytree, tipColours, polygonCoords, counties, ranges)
 
 # Extract Cork 10 herd only
-cork10 <- extract.clade(irishOnlytree, node = 165)
+cork10 <- extract.clade(irishOnlytree, node = 279)
 
 # Plot Cork problem herd
 plotProblemHerd(cork10)
@@ -114,6 +115,9 @@ inmv1 <- findVNTRs(irishOnlytree$tip.label, "1")
 
 # Find INMV type 2 strains
 inmv2 <- findVNTRs(irishOnlytree$tip.label, "2")
+
+# Find INMV type 2 strains
+inmv3 <- findVNTRs(irishOnlytree$tip.label, "3")
 
 # Find the distances between all isolates
 allDist <- cophenetic(irishOnlytree)
@@ -128,10 +132,10 @@ for(index in 1:nrow(allDist)){
 }
 
 # other INMV locations
-others <- c(3,69,121)
+others <- c(57,100)
 
 # Combine INMV vectors and sort
-allINMV <- c(inmv1, inmv2, others)
+allINMV <- c(inmv1, inmv2, inmv3, others)
 sortedAll <- sort(allINMV)
 
 # Filter out all INMVs
@@ -150,7 +154,7 @@ distList <- getWithinBetween(inmvDist, nameVec, FALSE)
 plotWB(distList, "VNTR types")
 
 # Run permutation and plot the plot
-runplotPer(distList, "VNTR", inmvDist, nameVec, TRUE, 10000, 10)
+system.time(runplotPer(distList, "VNTR", inmvDist, nameVec, TRUE, 10000, 10))
 
 #### Do with herd names now instead of VNTR####
 # Get the herd names
@@ -169,10 +173,10 @@ runplotPer(distHerdList, "Herd", allDist, herdNames, TRUE, 10000, 30)
 countyNames <- getNames(allDist, "CCounty")
 
 # Change a few manually
-countyNames[c(84,85,118, 119, 120, 74)] <- "Cork"
-countyNames[c(8,15)] <- "North1"
-countyNames[c(142,143)] <- "North2"
-countyNames[9] <- "Other"
+countyNames[c(11,13,46:49)] <- "Cork"
+countyNames[c(63,64)] <- "North1"
+countyNames[c(99,109)] <- "North2"
+countyNames[91] <- "Other"
 
 # Get the within and between distances for counties
 distCountyList <- getWithinBetween(allDist, countyNames, FALSE)
@@ -187,10 +191,10 @@ runplotPer(distCountyList, "County", allDist, countyNames, TRUE, 10000, 30)
 birthcountyNames <- getNames(allDist, "BCounty")
 
 # Change a few manually
-birthcountyNames <- birthcountyNames[-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143)]
+birthcountyNames <- birthcountyNames[-c(11,13,24,46:49,63,64,91,99,109,157)]
 
 # Edit allDist to exclude the excluded isolates
-newallDist <- allDist[-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143),-c(8,9,15,52,74,84,85,90,117,118,119,120,142,143)]
+newallDist <- allDist[-c(11,13,24,46:49,63,64,91,99,109,157),-c(11,13,24,46:49,63,64,91,99,109,157)]
 
 # Get the within and between distances for counties
 distbirthCountyList <- getWithinBetween(newallDist, birthcountyNames, FALSE)
@@ -199,7 +203,7 @@ distbirthCountyList <- getWithinBetween(newallDist, birthcountyNames, FALSE)
 plotWB(distbirthCountyList, "birth counties")
 
 # Run permutation and plot the plot
-runplotPer(distbirthCountyList, "Birth County", newallDist, birthcountyNames, TRUE, 100, 30)
+runplotPer(distbirthCountyList, "Birth County", newallDist, birthcountyNames, TRUE, 10000, 30)
 ###########################################################################
 ###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###
 ###########################################################################
@@ -259,10 +263,16 @@ getBryantLabels <- function(isoTable, TheTree){
       }else if(nameVector[index] == "14-2662"){
         
         nameVector[index] <- "14-2622"
-      }else if(nameVector[index] == "14-7468"){
-          
-        nameVector[index] <- "14-7486"
+      }else if(nameVector[index] == "14-2662"){
         
+        nameVector[index] <- "14-2622"
+      }else if(nameVector[index] == "17-5652"){
+          
+        nameVector[index] <- "17-6652"
+        
+      }else if(nameVector[index] == "14-7468"){
+        
+        nameVector[index] <- "14-7486"
       }else{
         
         next
@@ -488,7 +498,10 @@ toDropInternationalTips <- function(tiplabel){
     } else if(grepl("ERR0", tiplabel[index]) == TRUE){
       
       dropVector <- append(dropVector, index)
-    } 
+    } else if(grepl("SRR", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    }
   }
   return(dropVector)
 }
@@ -672,64 +685,91 @@ findVNTRs <- function(tiplabel, VNTR){
 }
 
 # Function to pull out within and between SNP distances
-getWithinBetween <- function(mat, name, shuffle){
+getWithinBetween <- function(mat, name, shuffle, originalWB){
   
   if(shuffle == TRUE){
     
-    shuffler <- sample(name, replace = FALSE) 
-  } else {
+    shuffler <- sample(name, replace = FALSE)
     
-    shuffler <- name
-  }
-  
-  # Create list to store info in
-  withinBetween <- list()
-  
-  # Create keys
-  keys <- c("CellLabel", "Within", "Between")
-  
-  # Loop thru rows of input matrix
-  for(row in 1:nrow(mat)){
+    # Create vectors to store info in using length of original
+    within <- rep(NA, length(originalWB[[1]]))
+    between <- rep(NA, length(originalWB[[2]]))
     
-    # Loop thru columns
-    for(col in 1:ncol(mat)){
+    # Create counters for within and between
+    countW <- 0
+    countB <- 0
+    
+    # Loop thru rows of input matrix
+    for(row in 1:nrow(mat)){
       
-      # Check if value present in cell
-      if(is.na(mat[row,col]) == TRUE){
+      # Loop thru columns
+      for(col in 1:ncol(mat)){
         
-        next
-      } else {
-        
-        # Are they the same VNTR
-        if(shuffler[row] == shuffler[col]){
+        # Check if value present in cell
+        if(is.na(mat[row,col]) == TRUE){
           
-          # Get the cell and status
-          status <- paste(row, col, "Within", sep = "_")
+          next
+        } else {
           
-          # Store cell location and status
-          withinBetween[[keys[1]]] <- append(withinBetween[[keys[1]]], status)
+          # Are they the same VNTR
+          if(shuffler[row] == shuffler[col]){
+            
+            countW <- countW + 1
+            
+            # Store distance value
+            within[countW] <- mat[row,col]
+            
+          }else{
+            
+            countB <- countB + 1
+            
+            # Store distance value
+            between[countB] <- mat[row,col]
+          }
           
-          # Store distance value
-          withinBetween[[keys[2]]] <- append(withinBetween[[keys[2]]], mat[row,col])
-          
-        }else{
-          
-          # Get the cell and status
-          status <- paste(row, col, "Between", sep = "_")
-          
-          # Store cell location and status
-          withinBetween[[keys[1]]] <- append(withinBetween[[keys[1]]], status)
-          
-          # Store distance value
-          withinBetween[[keys[3]]] <- append(withinBetween[[keys[3]]], mat[row,col])
         }
         
       }
-      
     }
   
+  } else {
+    
+    shuffler <- name
+    
+    # Create vectors to store info in
+    within <- c()
+    between <- c()
+    
+    # Loop thru rows of input matrix
+    for(row in 1:nrow(mat)){
+      
+      # Loop thru columns
+      for(col in 1:ncol(mat)){
+        
+        # Check if value present in cell
+        if(is.na(mat[row,col]) == TRUE){
+          
+          next
+        } else {
+          
+          # Are they the same VNTR
+          if(shuffler[row] == shuffler[col]){
+            
+            # Store distance value
+            within <- append(within, mat[row,col])
+            
+          }else{
+            
+            # Store distance value
+            between <- append(between, mat[row,col])
+          }
+          
+        }
+        
+      }
+    }  
   }
-  return(withinBetween)        
+  return(list(w=within, b=between))        
 }     
 
 # Function to pull out matrix names and simplify to chosen
@@ -794,15 +834,15 @@ getNames <- function(mat, chosen){
 plotWB <- function(listo, labelo){
   
   # Plot a boxplot comparing within and between
-  boxplot(listo$Within, listo$Between, 
+  boxplot(listo$w, listo$b, 
           main = paste("SNP distances within & between", labelo), 
           names = c("Within", "Between"),
           ylab = "SNP Difference",
           las = 1)
-  stripchart(listo$Within, add = TRUE, at =1, 
+  stripchart(listo$w, add = TRUE, at =1, 
              method = "jitter", vertical = TRUE, col = alpha("blue",0.4),
              pch = 4)
-  stripchart(listo$Between, add = TRUE, at =2, 
+  stripchart(listo$b, add = TRUE, at =2, 
              method = "jitter", vertical = TRUE, col = alpha("forestgreen",0.4),
              pch = 4)
   
@@ -812,19 +852,19 @@ plotWB <- function(listo, labelo){
 runplotPer <- function(listo, labelo, mat, name, shuffle, num, numBreaks){
   
   # Median difference of within/between groups
-  diffMedWB <- median(listo$Between) - median(listo$Within)
+  diffMedWB <- median(listo$b) - median(listo$w)
   
   # Create a vector to store num values
   medVector <- rep(NA, num)
   
   # Get the within/between distances for num permuted sets
-  system.time(for(run in 1:num){
-    distRunnerList <- getWithinBetween(mat, name, shuffle)
+  for(run in 1:num){
+    distRunnerList <- getWithinBetween(mat, name, shuffle, listo)
     
     # Get the difference of the means
-    medVector[run] <- median(distRunnerList$Between) - median(distRunnerList$Within) 
+    medVector[run] <- median(distRunnerList$b) - median(distRunnerList$w) 
     
-  })
+  }
   
   # Plot as histogram
   xmin <- min(medVector, diffMedWB)

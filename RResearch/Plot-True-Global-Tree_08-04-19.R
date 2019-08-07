@@ -3,6 +3,7 @@
 # 08-04-19 modified for better root and to find VNTR group distances
 # 12-06-19 modified for new influx of data
 # 26-06-19 tidied up some of the code
+# 07-08-19 modified for new data
 
 # Load packages
 library(ape)
@@ -11,7 +12,7 @@ library(phytools)
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_10-06-19"
+pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_06-08-19"
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso,
@@ -48,17 +49,17 @@ plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01,
 nodelabels(cex = 0.05, frame = "none")
 
 # Root the tree at 466 - ancestor rooted in the Bryant paper
-rootree <- root(TheTree, node = 466)
+rootree <- root(TheTree, node = 473)
 
 # Drop tips for far away ancestors (silvaticum and hominissius)
-dropNumbers <- c(186,187)
+dropNumbers <- c(446,447)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
 # Extract the clade that doesn't have all the distant sheep and cows
-extractedTree <- extract.clade(droppedTree, node = 452)
+extractedTree <- extract.clade(droppedTree, node = 476)
 
 # Convert branch lengths to SNP values
-extractedTree$edge.length <- extractedTree$edge.length * 48283
+extractedTree$edge.length <- extractedTree$edge.length * 70980
 
 # Get the rounded values o the lengths
 roundedSNPs <- round(extractedTree$edge.length)
@@ -250,6 +251,9 @@ makeRegionColours <- function(realNames){
     } else if(grepl("MAPK10", colourVec[index]) == TRUE){
       
       colourVec[index] <- "grey30"
+    } else if(grepl("SRR", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "darkorange3"
     } else {
       
       colourVec[index] <- "darkgreen"
