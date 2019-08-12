@@ -1,4 +1,5 @@
 # 13-06-19 Script created to work side by side with "Plot True Irish Tree" script
+# 12-08-19 Replaced obsolete functions with getNames function
 
 # Set path variables
 pathCoords <- "C:/Users/UCD/Documents/Lab/Cork MAP/PolygonCoords/"
@@ -9,20 +10,8 @@ counties <- c("Antrim","Armagh","Carlow","Cavan","Clare","Cork","Donegal","Down"
               "Limerick","Derry","Longford","Louth","Mayo","Meath","Monaghan","Offaly",
               "Roscommon","Sligo","Tipperary","Tyrone","Waterford","Westmeath","Wexford","Wicklow")
 
-# Find the distances between all isolates
-allDist <- cophenetic(irishOnlytree)
-
-# Pull out herd info from tip labels
-allHerds <- isolateHerder(irishOnlytree$tip.label)
-
-# Get herd distances
-herdDist <- allDist[allHerds, allHerds]
-
-# Process distance matrices for each herd
-herdDist[upper.tri(herdDist)] <- NA
-
-# Get the herd names
-herdNames <- getHerdNames(herdDist)
+# Get herd names from allDist
+herdNames <- getNames(allDist, "Herd")
 
 # Count the number of samples per county
 sampleNumbers <- numberSamples(herdNames)
@@ -56,55 +45,61 @@ smallMap(polygonCoords, counties)
 # Functions #
 #############
 
-# Function to pull out matrix names and simplify to herd names
-getHerdNames <- function(mat){
+getNames <- function(mat, chosen){
   
-  # Create a pair of vectors for row and col names
+  # Create a vector for names
   rowcolNames <- rep(NA, length(colnames(mat)))
   
-  # Loop thru and split off what's needed and fill into vectors
-  for(index in 1:length(rowcolNames)){
+  if(chosen == "VNTR"){
     
-    # Store row name
-    one <- strsplit(colnames(mat)[index], split = "_")[[1]][2]
-    two <- strsplit(colnames(mat)[index], split = "_")[[1]][3]
-    
-    vRow <- paste(one,"_",two)
-    
-    rowcolNames[index] <- vRow
-  }
-  return(rowcolNames)
-}
-
-# Function to pull out tiplabels corresponding to herds
-isolateHerder <- function(tiplabel){
-  
-  # Create vector of tips to find
-  finderVec <- c()
-  
-  # Loop thru the tips
-  for(index in 1:length(tiplabel)){
-    
-    # Split the string and take the 3rd value
-    one <- strsplit(tiplabel[index], split = "_")[[1]][2]
-    two <- strsplit(tiplabel[index], split = "_")[[1]][3]
-    
-    herdInfo <- paste(one, "_", two)
-    
-    
-    # Skip if it's an NA
-    if(is.na(herdInfo) == TRUE){
+    # Loop thru and split off what's needed and fill into vectors
+    for(index in 1:length(rowcolNames)){
       
-      next
+      # Store row name
+      vRow <- strsplit(rownames(mat)[index], split = "_")[[1]][4]
       
-    }else{
-      
-      finderVec <- append(finderVec, index)
-      
+      rowcolNames[index] <- vRow
     }
+    return(rowcolNames)
+  } else if(chosen == "Herd"){
+    
+    # Loop thru and split off what's needed and fill into vectors
+    for(index in 1:length(rowcolNames)){
+      
+      # Store row name
+      one <- strsplit(colnames(mat)[index], split = "_")[[1]][2]
+      two <- strsplit(colnames(mat)[index], split = "_")[[1]][3]
+      
+      vRow <- paste(one,"_",two)
+      
+      rowcolNames[index] <- vRow
+    }
+    return(rowcolNames)
+    
+  } else if(chosen == "CCounty"){
+    
+    # Loop thru and split off what's needed and fill into vectors
+    for(index in 1:length(rowcolNames)){
+      
+      # Store row name
+      vRow <- strsplit(colnames(mat)[index], split = "_")[[1]][2]
+      
+      rowcolNames[index] <- vRow
+    }
+    return(rowcolNames)
+    
+  } else if(chosen == "BCounty"){
+    
+    # Loop thru and split off what's needed and fill into vectors
+    for(index in 1:length(rowcolNames)){
+      
+      # Store row name
+      vRow <- strsplit(colnames(mat)[index], split = "_")[[1]][5]
+      
+      rowcolNames[index] <- vRow
+    }
+    return(rowcolNames)
   }
-  
-  return(finderVec)
 }
 
 numberSamples <- function(isolates){ 
