@@ -518,12 +518,12 @@ plotIrishTree <- function(tree, tipcols){
              align.tip.label = FALSE, type="phylogram", cex = 0.5)
   
   # Add a legend
-  legend("right", legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
+  legend(x=200, y=100, legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
          text.col = c("red", "deepskyblue3", "black", "darkorange2"), bty = "n", cex = 1.0,
          y.intersp = 0.5)
   
   # Add the SNP scale
-  add.scale.bar(cex = 2.0)
+  add.scale.bar(x=225, y=10, cex = 2.0)
 }
 
 # Function to acquire polygon coordinates for map plot
