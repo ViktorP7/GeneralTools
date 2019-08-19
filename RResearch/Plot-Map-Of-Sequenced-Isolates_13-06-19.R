@@ -1,5 +1,6 @@
 # 13-06-19 Script created to work side by side with "Plot True Irish Tree" script
 # 12-08-19 Replaced obsolete functions with getNames function
+# 19-08-19 Added arrows to map to show direction of movement between cattle birth/current counties
 
 # Set path variables
 pathCoords <- "C:/Users/UCD/Documents/Lab/Cork MAP/PolygonCoords/"
@@ -37,6 +38,13 @@ legend("topleft", legend="(N. isolates/N. herds)", bty="n", cex=1.8)
 
 # Plot county polygons and related sample data
 polygonsData(polygonCoords, sampleNumbers, counties)
+
+# Get the birth and current county of isolates
+countyNames <- getNames(allDist, "CCounty")
+birthcountyNames <- getNames(allDist, "BCounty")
+
+# Add birth to current county arrows onto map
+addArrows(countyNames, birthcountyNames, polygonCoords)
 
 # Plot small map
 smallMap(polygonCoords, counties)
@@ -263,6 +271,53 @@ polygonsData <- function(polygonCoords, sampleNumbers, counties) {
            labels = countyLabel,
            col = colour,
            cex = 1.0) 
+    }
+  }
+}
+
+addArrows <- function(countynames, birthcountynames, polygonCoords) {
+  
+  # Loop thru each entry in the names
+  for(index in 1:length(countynames)){
+    
+    # Check if there is an NA in the current position in either birth or current
+    if(is.na(countynames[index]) || is.na(birthcountynames[index]) || birthcountynames[index] == "n/a"){
+      
+      next
+    } else if(countynames[index] == birthcountynames[index]){
+      
+      next
+    } else{
+      
+      meanXB <- mean(polygonCoords[[birthcountynames[index]]][,"X"])
+      meanYB <- mean(polygonCoords[[birthcountynames[index]]][,"Y"])
+      meanXC <- mean(polygonCoords[[countynames[index]]][,"X"])
+      meanYC <- mean(polygonCoords[[countynames[index]]][,"Y"])
+      
+      # Check what colour needs to be assigned 
+      if(birthcountynames[index] == "Donegal" ||birthcountynames[index] == "Derry" 
+         ||birthcountynames[index] == "Monaghan" ||birthcountynames[index] == "Cavan"
+         ||birthcountynames[index] == "Fermanagh" ||birthcountynames[index] == "Tyrone"
+         ||birthcountynames[index] == "Armagh"||birthcountynames[index] == "Down"
+         ||birthcountynames[index] == "Antrim"){
+        
+        colour = "black"
+      } else if(birthcountynames[index] == "Mayo" || birthcountynames[index] =="Roscommon" 
+                ||birthcountynames[index] == "Sligo" ||birthcountynames[index] == "Leitrim"
+                ||birthcountynames[index] == "Galway"){
+        
+        colour = "deepskyblue4"
+      } else if(birthcountynames[index] == "Clare" ||birthcountynames[index] == "Kerry" 
+                ||birthcountynames[index] == "Cork" ||birthcountynames[index] == "Limerick" 
+                ||birthcountynames[index] == "Tipperary" ||birthcountynames[index] == "Waterford"){
+        
+        colour = "darkorange4"
+      } else {
+        
+        colour = "red"
+      }
+      
+      arrows(meanXB, meanYB, meanXC, meanYC, col = colour, length = 0.1, lwd = 2)
     }
   }
 }
