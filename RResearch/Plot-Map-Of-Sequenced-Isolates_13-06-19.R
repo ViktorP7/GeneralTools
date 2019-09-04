@@ -1,6 +1,10 @@
 # 13-06-19 Script created to work side by side with "Plot True Irish Tree" script
 # 12-08-19 Replaced obsolete functions with getNames function
 # 19-08-19 Added arrows to map to show direction of movement between cattle birth/current counties
+# 04-09-19 Arrows now weighted based on how many moves occur in the same way
+
+# Load required packages
+library(scales)
 
 # Set path variables
 pathCoords <- "C:/Users/UCD/Documents/Lab/Cork MAP/PolygonCoords/"
@@ -277,6 +281,9 @@ polygonsData <- function(polygonCoords, sampleNumbers, counties) {
 
 addArrows <- function(countynames, birthcountynames, polygonCoords) {
   
+  # Initialise vector to store birth/current combos
+  combo <- c()
+  
   # Loop thru each entry in the names
   for(index in 1:length(countynames)){
     
@@ -289,27 +296,54 @@ addArrows <- function(countynames, birthcountynames, polygonCoords) {
       next
     } else{
       
-      meanXB <- mean(polygonCoords[[birthcountynames[index]]][,"X"])
-      meanYB <- mean(polygonCoords[[birthcountynames[index]]][,"Y"])
-      meanXC <- mean(polygonCoords[[countynames[index]]][,"X"])
-      meanYC <- mean(polygonCoords[[countynames[index]]][,"Y"])
+      # Append the combo into the combo vector
+      combo <- append(combo, paste(birthcountynames[index], "_", countynames[index]))
+    }
+  }  
+  
+  # Create a vector of length combo
+  dusted <- rep(NA, length(combo))
+  
+  # Loop thru the combo vector
+  for(index in 1:length(combo)){
+    
+    if(combo[index] %in% dusted == TRUE){
+      
+      next
+    } else{
+      
+      dusted[index] <- combo[index]
+    
+      # Weight arrow thickness based on how many occurences of a thing
+      weight <- sum(combo == combo[index])
+      
+      # Split apart the names
+      birth <- strsplit(combo[index], split = " _ ")[[1]][1]
+      current <- strsplit(combo[index], split = " _ ")[[1]][2]
+      
+      # Get the rough centre of each polygon
+      
+      meanXB <- mean(polygonCoords[[birth]][,"X"])
+      meanYB <- mean(polygonCoords[[birth]][,"Y"])
+      meanXC <- mean(polygonCoords[[current]][,"X"])
+      meanYC <- mean(polygonCoords[[current]][,"Y"])
       
       # Check what colour needs to be assigned 
-      if(birthcountynames[index] == "Donegal" ||birthcountynames[index] == "Derry" 
-         ||birthcountynames[index] == "Monaghan" ||birthcountynames[index] == "Cavan"
-         ||birthcountynames[index] == "Fermanagh" ||birthcountynames[index] == "Tyrone"
-         ||birthcountynames[index] == "Armagh"||birthcountynames[index] == "Down"
-         ||birthcountynames[index] == "Antrim"){
+      if(birth == "Donegal" ||birth == "Derry" 
+          ||birth == "Monaghan" ||birth == "Cavan"
+          ||birth == "Fermanagh" ||birth == "Tyrone"
+          ||birth == "Armagh"||birth == "Down"
+          ||birth == "Antrim"){
         
         colour = "black"
-      } else if(birthcountynames[index] == "Mayo" || birthcountynames[index] =="Roscommon" 
-                ||birthcountynames[index] == "Sligo" ||birthcountynames[index] == "Leitrim"
-                ||birthcountynames[index] == "Galway"){
+      } else if(birth == "Mayo" || birth =="Roscommon" 
+                ||birth == "Sligo" ||birth == "Leitrim"
+                ||birth == "Galway"){
         
         colour = "deepskyblue4"
-      } else if(birthcountynames[index] == "Clare" ||birthcountynames[index] == "Kerry" 
-                ||birthcountynames[index] == "Cork" ||birthcountynames[index] == "Limerick" 
-                ||birthcountynames[index] == "Tipperary" ||birthcountynames[index] == "Waterford"){
+      } else if(birth == "Clare" ||birth == "Kerry" 
+                ||birth == "Cork" ||birth == "Limerick" 
+                ||birth == "Tipperary" ||birth == "Waterford"){
         
         colour = "darkorange4"
       } else {
@@ -317,9 +351,21 @@ addArrows <- function(countynames, birthcountynames, polygonCoords) {
         colour = "red"
       }
       
-      arrows(meanXB, meanYB, meanXC, meanYC, col = colour, length = 0.1, lwd = 2)
-    }
-  }
+      if(weight == 2){
+        
+        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.8), length = 0.1, lwd = weight+1)
+      } else if(weight == 3){
+        
+        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.6), length = 0.1, lwd = weight+1)
+      } else if(weight > 3){
+        
+        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.4), length = 0.1, lwd = weight+1)
+      } else {
+        
+        arrows(meanXB, meanYB, meanXC, meanYC, col = colour, length = 0.1, lwd = weight+1)
+      }
+    }  
+  }  
 }
 
 smallMap <- function(polygonCoords, counties) {
