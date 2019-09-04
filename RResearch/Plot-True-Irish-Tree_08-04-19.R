@@ -154,7 +154,7 @@ distList <- getWithinBetween(inmvDist, nameVec, FALSE)
 plotWB(distList, "VNTR types")
 
 # Run permutation and plot the plot
-system.time(runplotPer(distList, "VNTR", inmvDist, nameVec, TRUE, 10000, 10))
+runplotPer(distList, "VNTR", inmvDist, nameVec, TRUE, 10000, 5)
 
 #### Do with herd names now instead of VNTR####
 # Get the herd names
