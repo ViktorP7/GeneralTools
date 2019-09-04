@@ -38,7 +38,7 @@ plot(x=NA, y=NA,
      bty = "n", axes = FALSE)
 
 # Add legend
-legend("topleft", legend="(N. isolates/N. herds)", bty="n", cex=1.8)
+legend("topleft", legend="(N. isolates/N. herds)", bty="n", cex=1.4)
 
 # Plot county polygons and related sample data
 polygonsData(polygonCoords, sampleNumbers, counties)
