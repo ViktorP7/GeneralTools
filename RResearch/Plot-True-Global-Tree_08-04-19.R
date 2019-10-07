@@ -4,6 +4,7 @@
 # 12-06-19 modified for new influx of data
 # 26-06-19 tidied up some of the code
 # 07-08-19 modified for new data
+# 01-10-19 modified for new data
 
 # Load packages
 library(ape)
@@ -12,7 +13,7 @@ library(phytools)
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_06-08-19"
+pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_30-09-19"
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso,
@@ -49,17 +50,17 @@ plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01,
 nodelabels(cex = 0.05, frame = "none")
 
 # Root the tree at 466 - ancestor rooted in the Bryant paper
-rootree <- root(TheTree, node = 473)
+rootree <- root(TheTree, node = 491)
 
 # Drop tips for far away ancestors (silvaticum and hominissius)
-dropNumbers <- c(446,447)
+dropNumbers <- c(465,466)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
 # Extract the clade that doesn't have all the distant sheep and cows
-extractedTree <- extract.clade(droppedTree, node = 476)
+extractedTree <- extract.clade(droppedTree, node = 507)
 
 # Convert branch lengths to SNP values
-extractedTree$edge.length <- extractedTree$edge.length * 70980
+extractedTree$edge.length <- extractedTree$edge.length * 68928
 
 # Get the rounded values o the lengths
 roundedSNPs <- round(extractedTree$edge.length)
@@ -73,7 +74,27 @@ tipColours <- makeRegionColours(extractedTree$tip.label)
 # Plot the trees
 plotGlobalTrees(extractedTree, tipColours)
 
+#### Subsample the Irish isolates - other script required! ####
 
+# Create vector to match the tips
+ridOfThese <- rep(NA, length(notTheseTips))
+
+for(index in 1:length(notTheseTips)){
+  
+  ridOfThese[index] <- useTree$tip.label[notTheseTips[index]]
+}
+
+# Store the indexes
+subGlobalIndexes <- which(extractedTree$tip.label %in% ridOfThese)
+
+# Drop tips
+subGlobalTree <- drop.tip(extractedTree, ridOfThese)
+
+# Generate colours
+subGlobalCols <- makeRegionColours(subGlobalTree$tip.label)
+
+# Plot subbed tree
+plotGlobalTrees(subGlobalTree, subGlobalCols)
 #### Functions ####
 
 # Function to get the labels names for bryant isolates
@@ -162,8 +183,10 @@ getCVRLLabels <- function(isoTable, TheTree){
       # Check if the current accession is present in the big table
       if(isoTable[row,"AliquotFormat"] == nameVector[index]){
         
-        newname <- paste(nameVector[index], "_", isoTable[row,"Herd Ref"], "_",
-                         isoTable[row,"INMV Group"])
+        herd <- strsplit(isoTable[row,"Herd Ref"], split = " ")[[1]][2]
+        
+        newname <- paste(nameVector[index], "_", isoTable[row, "Herd Location"], "_", herd, "_",
+                         isoTable[row,"INMV Group"], "_", isoTable[row, "County of Birth"])
         nameVector[index] <- newname
       }else{
         
@@ -235,7 +258,7 @@ makeRegionColours <- function(realNames){
       colourVec[index] <- "darkorange3"
     } else if(grepl("Canada", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "darkorange3"
+      colourVec[index] <- "black"
     } else if(grepl("Venezuela", colourVec[index]) == TRUE){
       
       colourVec[index] <- "darkorange3"
@@ -253,7 +276,7 @@ makeRegionColours <- function(realNames){
       colourVec[index] <- "grey30"
     } else if(grepl("SRR", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "darkorange3"
+      colourVec[index] <- "black"
     } else {
       
       colourVec[index] <- "darkgreen"
@@ -275,20 +298,20 @@ plotGlobalTrees <- function(tree, tipCols){
   add.scale.bar(cex = 3)
   
   # Plot international tree as a fan
-  plot.phylo(tree, edge.width = 2, font = 1, label.offset = 0.2, 
+  plot.phylo(tree, edge.width = 1.8, font = 1, label.offset = 0.2, 
              tip.color = tipCols, edge.color = "grey50",
              align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
   
   #Add shaped tip labels
-  tiplabels(pch = 18, col = tipCols,  cex = 2)
+  tiplabels(pch = 18, col = tipCols,  cex = 1.8)
   
   # Add the SNP scale
   add.scale.bar(x=30,y=-120, cex = 3,lcol = "grey50", lwd = 3)
   text(x=60,y=-130, "SNPs", cex = 3)
   
   # Add a legend
-  legend(x=40, y=140, legend = c("Ireland", "Europe", "World"), 
-         text.col = c("darkgreen", "blue", "darkorange3"), bty = "n", cex = 2,y.intersp = 0.6)
+  legend(x=-180, y=-60, legend = c("IRL", "EU", "CAN", "Other"), 
+         text.col = c("darkgreen", "blue", "black", "darkorange3"), bty = "n", cex = 1.7,y.intersp = 0.6)
   
 }
 

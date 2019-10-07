@@ -38,7 +38,7 @@ plot(x=NA, y=NA,
      bty = "n", axes = FALSE)
 
 # Add legend
-legend("topleft", legend="(N. isolates/N. herds)", bty="n", cex=1.4)
+legend("topleft", legend="Isolates/Herds", bty="n", cex=1.6)
 
 # Plot county polygons and related sample data
 polygonsData(polygonCoords, sampleNumbers, counties)
@@ -239,14 +239,14 @@ polygonsData <- function(polygonCoords, sampleNumbers, counties) {
       # Plot the polygon of the current county
       polygon(x=polygonCoords[[counties[index]]][, "X"],
               y=polygonCoords[[counties[index]]][, "Y"],
-              border = colour)
+              border = alpha(colour, 0.6))
       
       # Add county name
-      text(x= meanX,
-           y= meanY,
-           labels = counties[index],
-           col = "grey",
-           cex = 1.0) # sets font size
+      #text(x= meanX,
+          # y= meanY,
+           #labels = counties[index],
+           #col = "grey",
+           #cex = 1.0) # sets font size
     }else{ # counties that are present on the sample list
       
       # Get number of samples for current county
@@ -254,27 +254,25 @@ polygonsData <- function(polygonCoords, sampleNumbers, counties) {
       nHerdsSamples <- sampleNumbers[[counties[index]]][2]
       
       # Calculate alpha = proportion of max number samples at current county
-      proportion <- nSamples/maxNSamples
+      #proportion <- nSamples/maxNSamples
       
       # Plot the polygon of the current county
       # RGB allows for any colour, alpha is the transparency of the colour
       # RGB values go from 0 to 1
       polygon(x=polygonCoords[[counties[index]]][, "X"],
               y=polygonCoords[[counties[index]]][, "Y"],
-              col=rgb(red=0, green=0, blue=1, alpha=proportion),
+              #col=rgb(red=0, green=0, blue=1, alpha=proportion),
               border = colour) 
       
       # Build label by pasting strings together
-      countyLabel <- paste(counties[index], " ",
-                           "(",nSamples, "/", nHerdsSamples,
-                           ")", sep = "")
+      countyLabel <- paste(nSamples, "/", nHerdsSamples, sep = "")
       
       # Add label
       text(x= meanX,
            y= meanY,
            labels = countyLabel,
            col = colour,
-           cex = 1.0) 
+           cex = 2) 
     }
   }
 }

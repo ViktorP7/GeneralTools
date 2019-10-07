@@ -8,6 +8,7 @@
 # 26-06-19 cleaned up code
 # 24-07-19 cleaned up code & updated with mapping functions
 # 07-08-19 modified for new data and reworked getWB function to make it faster
+# 01-10-19 modified for new data, added VNTR plotting function
 
 #### Loading of packages & files ####
 
@@ -19,7 +20,7 @@ library(scales)
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_06-08-19"
+pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_30-09-19"
 pathCoords <- "C:/Users/UCD/Documents/Lab/Cork MAP/PolygonCoords/"
 
 # Vector with all county names for the map
@@ -60,38 +61,45 @@ realNames <- getCVRLLabels(isoCVRLTable, TheTree)
 TheTree$tip.label <- realNames
 
 # Plot the tree for visualisation to determine clade extraction
-plot.phylo(TheTree, edge.width = 0.2, font = 1, label.offset = 0.01, 
+plot.phylo(TheTree, edge.width = 0.2, font = 1, 
            show.tip.label = TRUE, cex = 0.1)
 nodelabels(cex = 0.05, frame = "none")
 
 # Root the tree at 473 - ancestor rooted in the Bryant paper
-rootree <- root(TheTree, node = 473)
+rootree <- root(TheTree, node = 491)
 
-# Drop tips for far away ancestors (silvaticum and hominissius)
-dropNumbers <- c(446,447)
+# Drop tips for far away ancestors 
+dropNumbers <- c(465,466)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
 # Extract the clade that doesn't have all the distant sheep and cows
-extractedTree <- extract.clade(droppedTree, node = 476)
+extractedTree <- extract.clade(droppedTree, node = 507)
 
 # Get rid of the non-irish isolates
 dropper <- toDropInternationalTips(extractedTree$tip.label)
 irishOnlytree <- drop.tip(extractedTree, dropper)
 
+# Get rid of non-relevant tips
+dropem <- c(174,175,132,133,93,94,95,96,19,2)
+onlytree <- drop.tip(irishOnlytree, dropem)
+
 # Convert branch lengths to SNP values
-irishOnlytree$edge.length <- irishOnlytree$edge.length * 70980
+onlytree$edge.length <- onlytree$edge.length * 68928
 
 # Get the rounded values o the lengths
-roundedSNPs <- round(irishOnlytree$edge.length)
+roundedSNPs <- round(onlytree$edge.length)
 
 # Assign floored SNPs
-irishOnlytree$edge.length <- roundedSNPs
+onlytree$edge.length <- roundedSNPs
+
+# Correct mislabel
+onlytree$tip.label[53] <- "17-5652_Cork_10_1_Cork"
 
 # Get the colours
-tipColours <- makeIrishRegionColours(irishOnlytree$tip.label)
+tipColours <- makeIrishRegionColours(onlytree$tip.label)
 
 # Plot Irish tree
-plotIrishTree(irishOnlytree, tipColours)
+plotIrishTree(onlytree, tipColours)
 
 # Get polygon coordinates for map plotting
 polygonCoords <- getPolygonCoords(counties, pathCoords)
@@ -100,27 +108,22 @@ polygonCoords <- getPolygonCoords(counties, pathCoords)
 ranges <- mapLimits(polygonCoords, counties)
 
 # Plot Irish fan tree
-plotIrishFan(irishOnlytree, tipColours, polygonCoords, counties, ranges)
+plotIrishFan(onlytree, tipColours, polygonCoords, counties, ranges)
 
 # Extract Cork 10 herd only
-cork10 <- extract.clade(irishOnlytree, node = 279)
+cork10 <- extract.clade(onlytree, node = 190)
 
 # Plot Cork problem herd
 plotProblemHerd(cork10)
 
+
 #### Post Tree Analysis ####
 
-# Find INMV type 1 strains
-inmv1 <- findVNTRs(irishOnlytree$tip.label, "1")
-
-# Find INMV type 2 strains
-inmv2 <- findVNTRs(irishOnlytree$tip.label, "2")
-
-# Find INMV type 2 strains
-inmv3 <- findVNTRs(irishOnlytree$tip.label, "3")
+# Remove K10
+useTree <- drop.tip(onlytree, 2)
 
 # Find the distances between all isolates
-allDist <- cophenetic(irishOnlytree)
+allDist <- cophenetic(useTree)
 
 # Round the distances
 allDist <- round(allDist)
@@ -131,30 +134,17 @@ for(index in 1:nrow(allDist)){
   allDist[index, index] <- NA
 }
 
-# other INMV locations
-others <- c(57,100)
-
-# Combine INMV vectors and sort
-allINMV <- c(inmv1, inmv2, inmv3, others)
-sortedAll <- sort(allINMV)
-
-# Filter out all INMVs
-inmvDist <- allDist[sortedAll, sortedAll]
-
-# Process distance matrices 
-inmvDist[upper.tri(inmvDist)] <- NA
-
 # Get names of matrix
-nameVec <- getNames(inmvDist, "VNTR")
+nameVec <- getNames(allDist, "VNTR")
 
 # Get the within and between distances
-distList <- getWithinBetween(inmvDist, nameVec, FALSE)
+distList <- getWithinBetween(allDist, nameVec, FALSE)
 
 # Plot the within between plot
 plotWB(distList, "VNTR types")
 
 # Run permutation and plot the plot
-runplotPer(distList, "VNTR", inmvDist, nameVec, TRUE, 10000, 5)
+runplotPer(distList, "VNTR", allDist, nameVec, TRUE, 10000, 5)
 
 #### Do with herd names now instead of VNTR####
 # Get the herd names
@@ -172,12 +162,6 @@ runplotPer(distHerdList, "Herd", allDist, herdNames, TRUE, 10000, 30)
 #### Now with county ####
 countyNames <- getNames(allDist, "CCounty")
 
-# Change a few manually
-countyNames[c(11,13,46:49)] <- "Cork"
-countyNames[c(63,64)] <- "North1"
-countyNames[c(99,109)] <- "North2"
-countyNames[91] <- "Other"
-
 # Get the within and between distances for counties
 distCountyList <- getWithinBetween(allDist, countyNames, FALSE)
 
@@ -191,10 +175,10 @@ runplotPer(distCountyList, "County", allDist, countyNames, TRUE, 10000, 30)
 birthcountyNames <- getNames(allDist, "BCounty")
 
 # Change a few manually
-birthcountyNames <- birthcountyNames[-c(11,13,24,46:49,63,64,91,99,109,157)]
+birthcountyNames <- birthcountyNames[-c(67, 104, 142)]
 
 # Edit allDist to exclude the excluded isolates
-newallDist <- allDist[-c(11,13,24,46:49,63,64,91,99,109,157),-c(11,13,24,46:49,63,64,91,99,109,157)]
+newallDist <- allDist[-c(67,104,142),-c(67,104,142)]
 
 # Get the within and between distances for counties
 distbirthCountyList <- getWithinBetween(newallDist, birthcountyNames, FALSE)
@@ -204,6 +188,111 @@ plotWB(distbirthCountyList, "birth counties")
 
 # Run permutation and plot the plot
 runplotPer(distbirthCountyList, "Birth County", newallDist, birthcountyNames, TRUE, 10000, 30)
+
+#### Make a VNTR tree ####
+vntrNames <- getNames(allDist, "VNTR")
+
+vntrTips <- makeVNTRCols(vntrNames)
+
+plotVNTRTrees(onlytree, vntrTips)
+
+#### Perform subsampling of Ireland ####
+
+# Find tips to drop
+notTheseTips <- herdSubsampler(herdNames, useTree$tip.label)
+
+# Drop'em
+subbedTree <- drop.tip(useTree, notTheseTips)
+
+# Get rid of the colours too
+newCols <- makeIrishRegionColours(subbedTree$tip.label)
+
+# Plot the subbed tree
+plotIrishTree(subbedTree, newCols)
+plotIrishFan(subbedTree, newCols, polygonCoords, counties, ranges)
+
+# Check genetic distances
+subDist <- cophenetic(subbedTree)
+
+# Round the distances
+subDist <- round(subDist)
+
+# Remove unecessary zeroes by filling with NA
+for(index in 1:nrow(subDist)){
+  
+  subDist[index, index] <- NA
+}
+
+# Get names of matrix
+subVNTR <- getNames(subDist, "VNTR")
+
+# Get the within and between distances
+subVNTRList <- getWithinBetween(subDist, subVNTR, FALSE)
+
+# Plot the within between plot
+plotWB(subVNTRList, "VNTR types")
+
+subHerds <- getNames(subDist, "Herd")
+
+# Get the within and between distances for herds
+subHerdList <- getWithinBetween(subDist, subHerds, FALSE)
+
+# Plot the within between plot
+plotWB(subHerdList, "herds")
+
+subCounties <- getNames(subDist, "CCounty")
+
+# Get the within and between distances for counties
+subCountyList <- getWithinBetween(subDist, subCounties, FALSE)
+
+# Plot the within between plot
+plotWB(subCountyList, "counties")
+
+subBirthCounties <- getNames(subDist, "BCounty")
+
+# Change a few manually
+subBirthCounties <- subBirthCounties[-c(16, 49, 80)]
+
+# Edit allDist to exclude the excluded isolates
+newsubDist <- subDist[-c(16,49,80),-c(16,49,80)]
+
+# Get the within and between distances for counties
+subbirthCountyList <- getWithinBetween(newsubDist, subBirthCounties, FALSE)
+
+# Plot the within between plot
+plotWB(subbirthCountyList, "birth counties")
+
+# Make VNTR colors 
+subVNTRTips <- makeVNTRCols(subVNTR)
+
+# Plot VNTR tree
+plotVNTRTrees(subbedTree, subVNTRTips)
+
+# Create an example
+exampleTree <- extract.clade(subbedTree, node = 119)
+
+# Make VNTR colours for the thing
+exampleTips <- makeVNTRCols(c("2","1","2","1","1","1","1","1","1","2"))
+
+# Get and set the margins
+currentMar <- par()$mar
+par(mar=c(0,0,0,0), fig=c(0,1,0,1))
+
+# Plot tree
+plot.phylo(exampleTree, edge.width = 2, font = 1, label.offset = 0.2,
+           align.tip.label = FALSE, type="phylogram", cex = 0.7, show.tip.label = FALSE,
+           col="grey50")
+
+tiplabels(pch = 17, col = exampleTips,  cex = 2.5)
+
+# Add the SNP scale
+add.scale.bar(x=3,y=2,cex = 1.0, lwd = 2)
+text(x=5.5,y=2.25, "SNPs")
+
+# Reset the margins
+par(mar=currentMar)
+
+
 ###########################################################################
 ###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###
 ###########################################################################
@@ -328,7 +417,7 @@ makeIrishRegionColours <- function(realNames){
   for(index in 1:length(colourVec)){
     
     # Check if part of a word is in the name and assign a colour
-    if(grepl("NIreland", colourVec[index]) == TRUE){
+    if(grepl("Donegal", colourVec[index]) == TRUE){
       
       colourVec[index] <- "black"
     } else if(grepl("Louth", colourVec[index]) == TRUE){
@@ -357,6 +446,9 @@ makeIrishRegionColours <- function(realNames){
       colourVec[index] <- "darkorange2"
     } else if(grepl("Derry", colourVec[index]) == TRUE){
         
+      colourVec[index] <- "black"
+    } else if(grepl("Tyrone", colourVec[index]) == TRUE){
+      
       colourVec[index] <- "black"
     } else if(grepl("Monaghan", colourVec[index]) == TRUE){
         
@@ -387,16 +479,6 @@ makeIrishRegionColours <- function(realNames){
       
       colourVec[index] <- "red"
     } else if(grepl("Cork", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "darkorange2"
-    } else if(grepl("NA", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "black"
-
-    } else if(grepl("Donegal", colourVec[index]) == TRUE){
-      
-      colourVec[index] <- "black"
-    } else if(grepl("CIT", colourVec[index]) == TRUE){
       
       colourVec[index] <- "darkorange2"
     } else if(grepl("Waterford", colourVec[index]) == TRUE){
@@ -510,6 +592,7 @@ toDropInternationalTips <- function(tiplabel){
 plotIrishTree <- function(tree, tipcols){
   
   # Set margins to nothing
+  currentMar <- par()$mar
   par(mar=c(0,0,0,0))
   
   # Plot the national tree
@@ -518,12 +601,18 @@ plotIrishTree <- function(tree, tipcols){
              align.tip.label = FALSE, type="phylogram", cex = 0.5)
   
   # Add a legend
-  legend(x=200, y=100, legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
+  legend("right", legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
          text.col = c("red", "deepskyblue3", "black", "darkorange2"), bty = "n", cex = 1.0,
          y.intersp = 0.5)
   
   # Add the SNP scale
-  add.scale.bar(x=225, y=10, cex = 2.0)
+  add.scale.bar(x=140, y=10, cex = 2.0)
+  
+  # Add text to show SNPs
+  text("SNPs",x=150, y=7, cex = 1.0)
+  
+  # Reset the margins
+  par(mar=currentMar)
 }
 
 # Function to acquire polygon coordinates for map plot
@@ -613,6 +702,7 @@ smallMap <- function(polygonCoords, counties, ranges) {
 plotIrishFan <- function(tree, tipcols, polygonCoords, counties, ranges){
   
   # Set margins to nothing and set figure parameters
+  currentMar <- par()$mar
   par(mar=c(0,0,0,0), fig=c(0,1,0,1))
   
   # Plot national tree as a fan
@@ -621,28 +711,32 @@ plotIrishFan <- function(tree, tipcols, polygonCoords, counties, ranges){
              align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
   
   #Add shaped tip labels
-  tiplabels(pch = 18, col = tipcols,  cex = 2.5)
+  tiplabels(pch = 18, col = tipcols,  cex = 2.3)
   
   # Add the SNP scale
-  add.scale.bar(cex = 1.5, lcol = "grey50", lwd = 3)
+  add.scale.bar(x=-100, y=-110,cex = 1.5, lcol = "grey50", lwd = 3)
   text(x=-70,y=-120, "SNPs", cex = 3)
   
   # Add a legend
-  legend(x=-110,y=100, legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
-         text.col = c("red", "deepskyblue3", "black", "darkorange2"), bty = "n", cex = 2,
-         y.intersp = 0.6)
+  #legend(x=-110,y=100, legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
+  #       text.col = c("red", "deepskyblue3", "black", "darkorange2"), bty = "n", cex = 2,
+  #       y.intersp = 0.6)
   
   # Set figure parameters to top right corner 
   par(fig=c(0.8,1,0.8,1), new=T)
   
   # Plot the map in top right - REQUIRES OTHER SCRIPT
   smallMap(polygonCoords, counties, ranges)
+  
+  # Reset the margins
+  par(mar=currentMar)
 }
 
 # Function to plot problem herd
 plotProblemHerd <- function(tree){
   
-  # Refresh par
+  # Get and set the margins
+  currentMar <- par()$mar
   par(mar=c(0,0,0,0), fig=c(0,1,0,1))
   
   # Plot tree
@@ -654,34 +748,10 @@ plotProblemHerd <- function(tree){
   
   # Add the SNP scale
   add.scale.bar(x=3,y=10,cex = 1.0, lwd = 2)
-  text(x=3.5,y=9, "SNP")
-}
-
-# Function to pull out tiplabels corresponding to a VNTR type
-findVNTRs <- function(tiplabel, VNTR){
+  text(x=4,y=9, "SNP")
   
-  # Create vector of tips to find
-  finderVec <- c()
-  
-  # Loop thru the tips
-  for(index in 1:length(tiplabel)){
-    
-    # Split the string and take the 3rd value
-    vntrInfo <- strsplit(tiplabel[index], split = "_")[[1]][4]
-    
-    # Skip if it's an NA
-    if(is.na(vntrInfo) == TRUE){
-      
-      next
-    
-    }else if(vntrInfo == VNTR){
-      
-      finderVec <- append(finderVec, index)
-      
-    }
-  }
-  
-  return(finderVec)
+  # Reset the margins
+  par(mar=currentMar)
 }
 
 # Function to pull out within and between SNP distances
@@ -877,8 +947,100 @@ runplotPer <- function(listo, labelo, mat, name, shuffle, num, numBreaks){
   cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
   
   plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-       main=paste("Isolate", labelo), xlim=c(xmin, xmax), cex.axis=0.8, las=1)
+       main=paste("Clustering by", labelo), xlim=c(xmin, xmax), cex.axis=0.8, las=1)
   lines(c(diffMedWB,diffMedWB), c(0, max(h$counts)), col="blue", lwd=3)
   text(xmax-(xmax/4), num/10, cex = 0.9,
        paste("Actual Value\n= ", round(diffMedWB, digits=2)), col="blue")
+}
+
+# Function to create tip labels colours based on VNTR
+makeVNTRCols <- function(realNames){
+  
+  # Copy the name vector
+  colourVec <- realNames
+
+  # Loop thru each name
+  for(index in 1:length(colourVec)){
+    
+    if(is.na(colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "grey30"
+    } else if(colourVec[index] == "1"){
+      
+      colourVec[index] <- "red"
+    } else if(colourVec[index] == "2"){
+      colourVec[index] <- "deepskyblue3"
+    } else if(colourVec[index] == "3"){
+      colourVec[index] <- "darkorange3"
+    } else if(colourVec[index] == "13"){
+      colourVec[index] <- "black"
+    } else if(colourVec[index] == "116"){
+      colourVec[index] <- "darkgreen"
+    }
+  }
+  return(colourVec)
+}
+
+# Function to plot VNTR tree
+plotVNTRTrees <- function(tree, tipCols){
+  
+  # Plot the tree
+  plot.phylo(tree, edge.width = 0.2, font = 1, label.offset = 0.2, 
+             tip.color = tipCols,
+             align.tip.label = FALSE, type="phylogram", cex = 0.2)
+  
+  # Add the SNP scale
+  add.scale.bar(cex = 3)
+  
+  # Plot international tree as a fan
+  plot.phylo(tree, edge.width = 2, font = 1, 
+             tip.color = tipCols, edge.color = "grey50",
+             align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
+  
+  #Add shaped tip labels
+  tiplabels(pch = 18, col = tipCols,  cex = 2)
+  
+  # Add the SNP scale
+  add.scale.bar(x=30,y=-120, cex = 3,lcol = "grey50", lwd = 3)
+  text(x=60,y=-130, "SNPs", cex = 3)
+  
+  # Add a legend
+  legend(x=40, y=140, legend = c("1", "2", "3", "13", "116"), 
+         text.col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"), bty = "n", cex = 2,y.intersp = 0.6)
+  
+}
+
+# Function to subsample herds
+herdSubsampler <- function(herdNames, tips){
+  
+  # Vector to store indexes of subsampled
+  indexes <- c()
+  
+  # Loop thru each herd
+  for(herd in unique(herdNames)){
+    
+    # Check if the herd has 2 samples or less
+    if(sum(herdNames == herd) <= 2){
+      
+      # Pull out the indexes and place in indexes vector
+      indexes <- append(indexes, which(herdNames %in% herd))
+    
+    } else if(sum(herdNames == herd) >= 2){
+      
+      # Subsample from the big herd
+      subs <- sample(which(herdNames %in% herd), 2, replace = FALSE)
+      
+      # Place subsample indexes in
+      indexes <- append(indexes, subs)
+    }
+  }
+  
+  # Create vector of indexes from tips 
+  tipper <- c(1:length(tips))
+  
+  # Get rid of indexes from tips
+  tipsOut <- tipper[-indexes]
+  
+  return(tipsOut)
+  
 }
