@@ -110,6 +110,9 @@ ranges <- mapLimits(polygonCoords, counties)
 # Plot Irish fan tree
 plotIrishFan(onlytree, tipColours, polygonCoords, counties, ranges)
 
+# Plot unrooted tree
+plotIrishUnrooted(onlytree, tipColours, polygonCoords, counties, ranges)
+
 # Extract Cork 10 herd only
 cork10 <- extract.clade(onlytree, node = 190)
 
@@ -724,6 +727,40 @@ plotIrishFan <- function(tree, tipcols, polygonCoords, counties, ranges){
   
   # Set figure parameters to top right corner 
   par(fig=c(0.8,1,0.8,1), new=T)
+  
+  # Plot the map in top right - REQUIRES OTHER SCRIPT
+  smallMap(polygonCoords, counties, ranges)
+  
+  # Reset the margins
+  par(mar=currentMar)
+}
+
+# Function to plot unrooted tree
+plotIrishUnrooted <- function(tree, tipcols, polygonCoords, counties, ranges){
+  
+  # Set margins to nothing and set figure parameters
+  currentMar <- par()$mar
+  par(mar=c(0,0,0,0), fig=c(0,1,0,1))
+  
+  # Plot national tree as a fan
+  plot.phylo(tree, edge.width = 2.5, font = 1, label.offset = 0.2, 
+             tip.color = tipcols, edge.color = "grey50",
+             align.tip.label = FALSE, type="unrooted", cex = 0.5, show.tip.label = FALSE)
+  
+  #Add shaped tip labels
+  tiplabels(pch = 18, col = tipcols,  cex = 2.3)
+  
+  # Add the SNP scale
+  add.scale.bar(x=0, y=15, cex = 1.5, lcol = "grey50", lwd = 3)
+  text(x=30,y=0, "SNPs", cex = 3)
+  
+  # Add a legend
+  #legend(x=-110,y=100, legend = c("Leinster", "Connaught", "Ulster", "Munster"), 
+  #       text.col = c("red", "deepskyblue3", "black", "darkorange2"), bty = "n", cex = 2,
+  #       y.intersp = 0.6)
+  
+  # Set figure parameters to top right corner 
+  par(fig=c(0.8,1,0.1,0.3), new=T)
   
   # Plot the map in top right - REQUIRES OTHER SCRIPT
   smallMap(polygonCoords, counties, ranges)
