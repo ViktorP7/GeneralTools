@@ -72,7 +72,7 @@ bash ../JoeGeneralTools/ProcessingPipeline/ProcessRawReads_28-06-17.sh fastq.gz 
 cd vcfFiles
 
 # Run merge tool
-java -jar ../../JoeGeneralTools/ProcessingPipeline/MergeVCFFiles_10-01-19.jar . ../../Reference/MAPK10.gff3
+java -jar -Xmx5000m ../../JoeGeneralTools/ProcessingPipeline/MergeVCFFiles_10-01-19.jar . ../Reference/MAPK10.gff3
 ```
 
 We can check the genome coverage of the isolates. After creating the merged VCF, we need to filter it to get rid of bad quality or badly supported positions.
