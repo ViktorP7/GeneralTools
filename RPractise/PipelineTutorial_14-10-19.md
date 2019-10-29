@@ -170,37 +170,37 @@ We've now got the table and tree read into R, but now we need to combine the two
 ```r
 # Name the function and define inputs
 addVNTRtoTipLabel <- function(tree, data){
-
+  
   # Create a vector to match the tip label vector in the tree
   nameVector <- tree$tip.label
   
   # Loop thru the data
   for(row in 1:nrow(data)){
-  
+    
     # Loop thru the name vector
     for(index in 1:length(nameVector)){
-    
-      # Check if the current name matches the tip label, and if so...
-      if(data[row, "Name"] == nameVector[index]){
       
+      # Check if the current name matches the tip label, and if so...
+      if(grepl(data[row, "Isolate"], nameVector[index]) == TRUE){
+        
         # Paste together the label with the VNTR number
-        newLabel <- paste(nameVector[index], "_", data[row, "VNTR"])
+        newLabel <- paste(data[row, "Isolate"],data[row, "Type"])
         
         # Store the label in the corresponding place in the name vector
         nameVector[index] <- newLabel
-      
-      # But if the names don't match, then...
+        
+        # But if the names don't match, then...
       }else{ 
-
+        
         # Skip to next iteration
         next
         
       }
     }
   }
- 
- # Return an output from the function
- return(nameVector)
+  
+  # Return an output from the function
+  return(nameVector)
 }
 ```
 
@@ -229,7 +229,7 @@ tiplabels(cex = 0.05, frame = "none")
 
 ### Check output ###
 
-# Root the tree appropriately
+# Root the tree appropriately if needed
 rooTree <- root(theTree, node = x)
 
 # Create a vector of tips to drop
@@ -246,67 +246,122 @@ Our tree might seem like it's ready now, but there is still more to do. Type <co
 droppedTree$edge.length <- round(droppedTree$edge.length * a)
 ```
 
-The final thing we must do before plotting is to assign some sort of colours to each of the VNTR types. Let's write a function to do that. It'll need the tip labels as input.
+The final thing we must do before plotting is to assign some sort of colours to each of the VNTR types. Let's write a function to do that. It'll need the tip labels as input. We'll also write a similar function for shapes.
 
 ```r
 # Function to generate tip colours based on VNTR
 makeVNTRColours <- function(tips){
+  
+  # Copy input vector
+  colourVector <- tips
+  
+  # Loop through each tip
+  for(index in 1:length(tips)){
+    
+    # Split the last value off the tip name and check if it matches the number...
+    if(strsplit(tips[index], split = " ")[[1]][2] == "1"){
+      
+      #... assign a colour
+      colourVector[index] <- "red"
+      
+      # Now do the same for the other types
+    } else if(strsplit(tips[index], split = " ")[[1]][2] == "2"){
+      
+      #... assign a colour
+      colourVector[index] <- "deepskyblue3"
+      
+      # Now do the same for the other types
+    }else if(strsplit(tips[index], split = " ")[[1]][2] == "3"){
+      
+      #... assign a colour
+      colourVector[index] <- "darkorange3"
+      
+      # Now do the same for the other types
+    }else if(strsplit(tips[index], split = " ")[[1]][2] == "13"){
+      
+      #... assign a colour
+      colourVector[index] <- "black"
+      
+      # Now do the same for the other types
+    }else if(strsplit(tips[index], split = " ")[[1]][2] == "116"){
+      
+      #... assign a colour
+      colourVector[index] <- "darkgreen"
+      
+      # Finally, incase a value is something unexpected, we can just turn it grey
+    } else {
+      
+      # Make it grey
+      colourVector[index] <- "grey30"
+    }
+  }
+  
+  # Return our colours
+  return(colourVector)
+  
+}
 
-	# Copy input vector
-	colourVector <- tips
-	
-	# Loop through each tip
-	for(index in 1:length(tips)){
-	
-		# Split the last value off the tip name and check if it matches the number...
-		if(strsplit(tips[index], split = "_")[[1]][2] == "1"){
-		
-			#... assign a colour
-			colourVector[index] <- "red"
-		
-		# Now do the same for the other types
-		} else if(strsplit(tips[index], split = "_")[[1]][2] == "2"){
-		
-			#... assign a colour
-			colourVector[index] <- "deepskyblue3"
-		
-		# Now do the same for the other types
-		}else if(strsplit(tips[index], split = "_")[[1]][2] == "3"){
-		
-			#... assign a colour
-			colourVector[index] <- "darkorange3"
-		
-		# Now do the same for the other types
-		}else if(strsplit(tips[index], split = "_")[[1]][2] == "13"){
-		
-			#... assign a colour
-			colourVector[index] <- "black"
-		
-		# Now do the same for the other types
-		}else if(strsplit(tips[index], split = "_")[[1]][2] == "116"){
-		
-			#... assign a colour
-			colourVector[index] <- "darkgreen"
-		
-		# Finally, incase a value is something unexpected, we can just turn it grey
-		} else {
-		
-			# Make it grey
-			colourVector[index] <- "grey30"
-		}
-	}
-	
-	# Return our colours
-	return(colourVector)
-	
+# Function to generate tip shapes based on VNTR
+makeVNTRShapes <- function(tips){
+  
+  # Copy input vector
+  colourVector <- tips
+  
+  # Loop through each tip
+  for(index in 1:length(tips)){
+    
+    # Split the last value off the tip name and check if it matches the number...
+    if(strsplit(tips[index], split = " ")[[1]][2] == "1"){
+      
+      #... assign a colour
+      colourVector[index] <- 15
+      
+      # Now do the same for the other types
+    } else if(strsplit(tips[index], split = " ")[[1]][2] == "2"){
+      
+      #... assign a colour
+      colourVector[index] <- 17
+      
+      # Now do the same for the other types
+    }else if(strsplit(tips[index], split = " ")[[1]][2] == "3"){
+      
+      #... assign a colour
+      colourVector[index] <- 16
+      
+      # Now do the same for the other types
+    }else if(strsplit(tips[index], split = " ")[[1]][2] == "13"){
+      
+      #... assign a colour
+      colourVector[index] <- 19
+      
+      # Now do the same for the other types
+    }else if(strsplit(tips[index], split = " ")[[1]][2] == "116"){
+      
+      #... assign a colour
+      colourVector[index] <- 18
+      
+      # Finally, incase a value is something unexpected, we can just turn it grey
+    } else {
+      
+      # Make it grey
+      colourVector[index] <- 11
+    }
+  }
+  
+  # Return our colours
+  return(colourVector)
+  
 }
 ```
 
-Now just run the function to store it in memory, and generate our tip colours. We can then plot the tree.
+Now just run the functions to store them in memory, and generate our tip colours and shapes. We can then plot the tree.
 
 ```r
 # Generate colours
 tipColours <- makeVNTRColours(droppedTree$tip.label)
+
+# Generate shapes
+tipShapes <- makeVNTRShapes(droppedTree$tip.label)
 
 # Store current margin settings	
 currentMar <- par()$mar
@@ -315,20 +370,22 @@ currentMar <- par()$mar
 par(mar=c(0,0,0,0), fig=c(0,1,0,1))
   
 # Plot tree as a fan
-plot.phylo(tree, edge.width = 2.5, font = 1, label.offset = 0.2, 
-             tip.color = tipcols, edge.color = "grey50",
-             align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
-  
+plot.phylo(droppedTree, edge.width = 2.5, font = 1, label.offset = 0.2, 
+           tip.color = tipColours, edge.color = "grey50",
+           align.tip.label = FALSE, type="fan", cex = 0.5, show.tip.label = FALSE)
+
 # Add shaped tip labels
-tiplabels(pch = 18, col = tipcols,  cex = 2.3)
-  
+tiplabels(pch = as.numeric(tipShapes), col = tipColours,  cex = 2.3)
+
 # Add the SNP scale
-add.scale.bar(x=-100, y=-110,cex = 1.5, lcol = "grey50", lwd = 3)
-text(x=-70,y=-120, "SNPs", cex = 3)
+add.scale.bar("bottomleft",cex = 1.5, lcol = "grey50", lwd = 3)
+text("bottomleft", "SNPs", cex = 3)
 
 # Add a legend
-  legend(x=40, y=140, legend = c("1", "2", "3", "13", "116"), 
-         text.col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"), bty = "n", cex = 2,y.intersp = 0.6)
+legend("topleft", legend = c("1", "2", "3", "13", "116"), 
+       text.col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"),
+       pch= c(15,17,16,19,18), col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"),
+       bty = "n", cex = 2,y.intersp = 0.6)
   
 # Restore margins
 par(mar=currentMar)	
