@@ -296,9 +296,8 @@ text(x=5.5,y=2.25, "SNPs")
 par(mar=currentMar)
 
 
-###########################################################################
-###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###FUNCTIONS###
-###########################################################################
+
+#### Functions ####
 
 # Function to get the labels names for bryant isolates
 getBryantLabels <- function(isoTable, TheTree){
