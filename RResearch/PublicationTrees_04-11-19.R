@@ -14,6 +14,8 @@ library(gplots)
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
 pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_30-09-19"
+pathHerdStats <- "C:/Users/UCD/Documents/Lab/HerdTbStatistics_2010-2019.csv"
+niData <- "C:/Users/UCD/Documents/Lab/NICattleData2018.csv"
 
 
 # Read in table of bryant isolates
@@ -27,8 +29,31 @@ isoBryantTable <- read.table(pathBryantIso,
 isoCVRLTable <- read.table(pathNewIso,
                            header = TRUE,
                            sep = ",",
-                           stringsAsFactors=FALSE, # Strings like "Cork 4" are not designated as factors
-                           check.names=FALSE) # Names left as they are, no dots inserted
+                           stringsAsFactors=FALSE, 
+                           check.names=FALSE) 
+
+# Read in herd statistics
+statistics <- readTBStatisticsFile(pathHerdStats)
+
+# Calculate the per county proportion test positive animals in most recent report - 2018Q3
+summaryTables <- calculateSummaryStatisticsPerQuarter(statistics)
+
+# Get the relevant year
+relevantYear <- summaryTables$`2018Q2`
+
+# Update with Northern Ireland info (https://www.daera-ni.gov.uk/articles/agricultural-census-northern-ireland)
+northTable <- read.table(niData,
+                         header = TRUE,
+                         sep = ",",
+                         stringsAsFactors=FALSE,
+                         check.names=FALSE)
+
+# Merge the two tables
+merged2018Cattle <- rbind(relevantYear, northTable)
+
+# Calculate the total of cattle and total of herds
+cattleTotal <- sum(merged2018Cattle[1,3], merged2018Cattle[nrow(merged2018Cattle),3])
+herdTotal <- sum(merged2018Cattle[1,2], merged2018Cattle[nrow(merged2018Cattle),2])
 
 #### Tree file processing ####
 
@@ -195,10 +220,18 @@ plot(x=NA, y=NA,
 # Add legend
 legend("topleft", legend = c("1","2","3","4","5","6"), title="Isolates per Herd", bty="n", cex=3,
        pch = c(21,21,21,21,21,21), col = alpha("red", 0.9), pt.bg = alpha("red", 0.65), 
-       pt.cex = c(2,3,4,5,6,7))
+       pt.cex = c(2,3,4,5,6,7), ncol = 2)
+
+# Add a second legend for the proportions of cattle/herds
+legend("bottomright", legend = c(0,0.03,0.06,0.09,0.12,0.15,0.18,0.21), 
+       title = "Proportion of Total Cattle Present", bty = "n", cex = 2.5, 
+       pch = rep(22,8), col = "black",
+       pt.bg = c(alpha("blue", 0.1),alpha("blue", 0.13),alpha("blue", 0.16),alpha("blue", 0.19),
+               alpha("blue", 0.22),alpha("blue", 0.25),alpha("blue", 0.28),alpha("blue", 0.31)),
+       ncol = 2, pt.cex = 6)
 
 # Plot county polygons and related sample data
-polygonsSpatialData(polygonCoords, sampleNumbers, counties, newHerdNames)
+polygonsSpatialData(polygonCoords, sampleNumbers, counties, newHerdNames, merged2018Cattle, cattleTotal, 3)
 
 dev.off()
 
@@ -207,9 +240,22 @@ dev.off()
 # Get the count matrix
 counterMatrix <- getYearCounts(newHerdNames, newDist)
 
+# Save plot as .pdf file
+outputFile <- paste("TemporalIsolates.pdf", sep="")
+pdf(outputFile, height=20, width=15)
+
+par(cex.main = 2.5, cex.lab = 1.5)
 # Plot the figure
 heatmap.2(counterMatrix, dendrogram = "none", trace = "none", Rowv = FALSE,
-          Colv = FALSE, col = )
+          Colv = FALSE, col = colorRampPalette(c("white", "blue")), denscol = "red",
+          xlab = "", ylab = "", main = "Temporal Span of Isolates Across Herds", 
+          offsetRow = -83, cexRow = 1.7, density.info = "none", keysize = 0.5, margins = c(7,7),
+          key.xlab = "Number of Isolates", cexCol = 1.7, key.title = "Key")
+mtext(text="YEAR", side=1, line=3.5, cex = 2)
+mtext(text="HERD", side=4, line=0.5, cex = 2)
+
+
+dev.off()
 
 #### Functions ####
 
@@ -652,16 +698,20 @@ sampleMax <- function(sampleNumbers) {
 }
 
 # Fill polygons on map plot
-polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, herdnames) {
+polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, herdnames, yearData, someTotal, cattleherd) {
   
   for(index in 1:length(counties)) {
+    
+    # Calculate alpha = proportion of animals in current county
+    # Cattleherd is either a 2 or a 3 depending on herd or cattle
+    proportion <- yearData[grep(counties[index], yearData[,1], ignore.case = TRUE), cattleherd]/someTotal + 0.1
  
     # Add county name
     if(is.null(sampleNumbers[[counties[index]]]) == TRUE ){
       
       # Plot the polygon of the current county
       plot(polygonCoords[[counties[index]]],
-              border = "black", add = TRUE)
+              border = "black", add = TRUE, col = alpha("blue", proportion))
 
     }else{ # counties that are present on the sample list
       
@@ -671,7 +721,7 @@ polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, herdname
       
       # Plot the polygon of the current county
       plot(polygonCoords[[counties[index]]],
-              border = "black", add = TRUE)
+              border = "black", add = TRUE, col = alpha("blue", proportion))
       
       # Create a vector of herds in the current county
       currentHerds <- unique(herdnames[grep(counties[index], newHerdNames)])
@@ -724,7 +774,7 @@ getYearCounts <- function(herdnames, matrix){
     currentCol <- grep(trimws(year), colnames(countMatrix))
     
     # Match row
-    currentRow <- grep(trimws(place), rownames(countMatrix))
+    currentRow <- which(trimws(place) == rownames(countMatrix))
     
     # Add a count to the relevant matrix slot
     countMatrix[currentRow, currentCol] <- herdYears[index]
@@ -732,4 +782,107 @@ getYearCounts <- function(herdnames, matrix){
   }
   
   return(countMatrix)
+}
+
+# Function to read in stats file (author JC)
+readTBStatisticsFile <- function(fileName){
+  
+  # Note that file was downloaded from: https://www.cso.ie/px/pxeirestat/Database/eirestat/Animal%20Disease%20Statistics/Animal%20Disease%20Statistics_statbank.asp?SP=Animal%20Disease%20Statistics&Planguage=0&ProductID=DB_DA
+  # I selected all years and counties, downlaoded as csv and then removed quotes
+  
+  # Open a connection to a file to read (open="r")
+  connection <- file(fileName, open="r")
+  
+  # Get all lines from file and store in vector
+  fileLines <- readLines(connection)
+  
+  # Close file connection
+  close(connection)
+  
+  # Intialise a dataframe to store the TB statistics
+  statistics <- NULL
+  county <- "NA"
+  row <- 0
+  
+  # Loop through each of the lines in file
+  for(i in 4:length(fileLines)){
+    
+    # Remove quotes
+    fileLines[i] <- gsub(pattern="\"", replacement="", x=fileLines[i])
+    
+    # Split the current line into its parts
+    parts <- strsplit(fileLines[i], split=",")[[1]]
+    
+    # If 24th line get the years initialise a dataframe to store the statistics
+    if(i == 4){
+      statistics <- data.frame(matrix(nrow=1, ncol=length(parts)), stringsAsFactors=FALSE)
+      colnames(statistics) <- c("County", "Statistic", parts[-c(1,2)])
+      next
+    }
+    
+    # Check if found new county - name will present alone on new line
+    if(length(parts) == 1){
+      county <- parts[1]
+      next
+    }
+    
+    # Store the statistics from the current line
+    row <- row + 1
+    statistics[row, ] <- c(county, parts[-1])
+  }
+  
+  # Convert the county names to upper case
+  statistics$County <- toupper(statistics$County)
+  
+  return(statistics)
+}
+
+# Function to calculate summary stats (author JC)
+calculateSummaryStatisticsPerQuarter <- function(statistics){
+  
+  # Keep only the statistics of interest
+  info <- statistics[grepl(statistics$Statistic, pattern="Herds in County|Animals in County"), ]
+  
+  # Examine each of the year quarters and store a summary
+  output <- list()
+  for(column in colnames(info)[-c(1,2)]){
+    
+    # Initialise a data frame to store a data summary
+    dataSummary <- data.frame("County"=NA, "HerdsInCounty"=-1, "AnimalsInCounty"=-1,
+                              stringsAsFactors=FALSE)
+    
+    # Examine that TB statistics of interest
+    row <- 0
+    for(i in seq(from=2, to=nrow(info), by=2)){
+      
+      # Increment the row
+      row <- row + 1
+      
+      # Store the information for the current county
+      dataSummary[row, "County"] <- info[i, "County"]
+      dataSummary[row, "HerdsInCounty"] <- as.numeric(info[i-1, column])
+      dataSummary[row, "AnimalsInCounty"] <- as.numeric(info[i, column])
+    }
+    
+    # Combine Tipperary (north & south), Cork (north & south), and Wicklow (east and west)
+    corkRow <- which(dataSummary$County == "CORK NORTH")
+    dataSummary[corkRow, "County"] <- "CORK"
+    dataSummary[corkRow, 2:3] <- dataSummary[corkRow, 2:3] + dataSummary[corkRow + 1, 2:3]
+    dataSummary <- dataSummary[-(corkRow + 1), ]
+    
+    tipperaryRow <- which(dataSummary$County == "TIPPERARY NORTH")
+    dataSummary[tipperaryRow, "County"] <- "TIPPERARY"
+    dataSummary[tipperaryRow, 2:3] <- dataSummary[tipperaryRow, 2:3] + dataSummary[tipperaryRow + 1, 2:3]
+    dataSummary <- dataSummary[-(tipperaryRow + 1), ]
+    
+    wicklowRow <- which(dataSummary$County == "WICKLOW E")
+    dataSummary[wicklowRow, "County"] <- "WICKLOW"
+    dataSummary[wicklowRow, 2:3] <- dataSummary[wicklowRow, 2:3] + dataSummary[wicklowRow + 1, 2:3]
+    dataSummary <- dataSummary[-(wicklowRow + 1), ]
+    
+    # Store the data summary for the current quarter
+    output[[column]] <- dataSummary
+  }
+  
+  return(output)
 }
