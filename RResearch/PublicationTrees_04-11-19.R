@@ -172,7 +172,7 @@ subbedTree$tip.label <- simpleLabels
 
 # Save plot as .pdf file (Ireland)
 outputFile <- paste("VNTR_Tree.pdf", sep="")
-pdf(outputFile, height=35, width=20)
+pdf(outputFile, height=25, width=20)
 
 # Set margins to nothing
 currentMar <- par()$mar
@@ -181,7 +181,7 @@ par(mar=c(0,0,0,0))
 # Plot VNTR tree
 plot.phylo(subbedTree, edge.width = 2, font = 1, label.offset = 0.2, 
            tip.color = vntrTips,
-           align.tip.label = FALSE, type="phylogram", cex = 1.6)
+           align.tip.label = FALSE, type="phylogram", cex = 1.5)
 
 # Add the SNP scale
 add.scale.bar(x=100, y = 2, cex = 4)
@@ -202,7 +202,7 @@ dev.off()
 
 # Make EU plot
 outputFile <- paste("EU-Tree.pdf", sep="")
-pdf(outputFile, height=35, width=20)
+pdf(outputFile, height=25, width=20)
 
 # Set margins to nothing
 currentMar <- par()$mar
