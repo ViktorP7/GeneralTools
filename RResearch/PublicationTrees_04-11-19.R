@@ -82,6 +82,10 @@ droppedTree <- drop.tip(rootree, dropNumbers)
 # Extract the clade that doesn't have all the distant sheep and cows
 extractedTree <- extract.clade(droppedTree, node = 507)
 
+# Get rid of non-EU isolates for international tree
+dropInternational <- toDropNonEUTips(extractedTree$tip.label)
+euOnlyTree <- drop.tip(extractedTree, dropInternational)
+
 # Get rid of the non-irish isolates
 dropper <- toDropInternationalTips(extractedTree$tip.label)
 irishOnlytree <- drop.tip(extractedTree, dropper)
@@ -95,18 +99,23 @@ onlytree$tip.label[53] <- "17-5652_Cork_10_1_Cork"
 
 # Convert branch lengths to SNP values
 onlytree$edge.length <- onlytree$edge.length * 68928
+euOnlyTree$edge.length <- euOnlyTree$edge.length * 68928
 
 # Get the rounded values o the lengths
 roundedSNPs <- round(onlytree$edge.length)
+roundedEU <- round(euOnlyTree$edge.length)
 
-# Assign floored SNPs
+# Assign rounded SNPs
 onlytree$edge.length <- roundedSNPs
+euOnlyTree$edge.length <- roundedEU
 
 # Remove K10
 useTree <- drop.tip(onlytree, 2)
+euTree <- drop.tip(euOnlyTree, 6)
 
 # Find the distances between all isolates
 allDist <- cophenetic(useTree)
+euDist <- cophenetic(euTree)
 
 # Round the distances
 allDist <- round(allDist)
@@ -119,12 +128,15 @@ for(index in 1:nrow(allDist)){
 
 # Get the herd names
 herdNames <- getNames(allDist, "Herd")
+euHerds <- getNames(euDist, "Herd")
 
 # Get rid of all Cork 10 isolates except two
 notTheseTips <- cork10Subsampler(herdNames, useTree$tip.label)
+notCork <- cork10Subsampler(euHerds, euTree$tip.label)
 
 # Drop'em
 subbedTree <- drop.tip(useTree, notTheseTips)
+realEU <- drop.tip(euTree, notCork)
 
 # Find the distances between all isolates
 newDist <- cophenetic(subbedTree)
@@ -147,15 +159,18 @@ newHerdNames <- getNames(newDist, "Herd")
 # Make VNTR colours
 vntrTips <- makeVNTRCols(vntrNames)
 
+# Make EU colours
+euCols <- makeRegionColours(realEU$tip.label)
+
 # Simplify the labels
 simpleLabels <- deconstructLabels(subbedTree$tip.label)
 
 # Assign simple labels
 subbedTree$tip.label <- simpleLabels
 
-#### VNTR tree plotting ####
+#### Tree plotting ####
 
-# Save plot as .pdf file
+# Save plot as .pdf file (Ireland)
 outputFile <- paste("VNTR_Tree.pdf", sep="")
 pdf(outputFile, height=35, width=20)
 
@@ -177,6 +192,46 @@ legend(x=115, y=110, legend = c("1", "2", "3", "13", "116"),
        text.col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"), 
        bty = "n", cex = 4, y.intersp = 1)
 text(x=130, y=110, "INMV Type", cex = 4.5)
+
+
+# Reset the margins
+par(mar=currentMar)
+
+dev.off()
+
+
+# Make EU plot
+outputFile <- paste("EU-Tree.pdf", sep="")
+pdf(outputFile, height=35, width=20)
+
+# Set margins to nothing
+currentMar <- par()$mar
+par(mar=c(0,0,0,0))
+
+# Plot VNTR tree
+plot.phylo(realEU, edge.width = 2, font = 1, label.offset = 0.2, 
+           show.tip.label = FALSE,
+           align.tip.label = FALSE, type="phylogram", cex = 1.6)
+
+#Add shaped tip labels
+tiplabels(pch = 18, col = euCols,  cex = 3)
+
+# Add the SNP scale
+add.scale.bar(x=100, y = 2, cex = 4)
+text(x=135, y =2, cex = 4, "SNPs")
+
+# Add a legend
+legend(x=110, y=220, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
+                                "Italy", "Spain", "France", "Germany", "Netherlands",
+                                "Czech Republic", "Greece", "Norway"), 
+       text.col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "springgreen3",
+                    "chartreuse4", "goldenrod3", "royalblue4", "black", "orangered",
+                    "mediumblue", "slateblue", "purple"), pch = 18,
+       col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "springgreen3",
+                 "chartreuse4", "goldenrod3", "royalblue4", "black", "orangered",
+                 "mediumblue", "slateblue", "purple"),
+       bty = "n", cex = 3, y.intersp = 1, title = "Country")
+
 
 
 # Reset the margins
@@ -416,6 +471,45 @@ toDropInternationalTips <- function(tiplabel){
       
       dropVector <- append(dropVector, index)
     } else if(grepl("NewZealand", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("USA", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Canada", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Venezuela", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("India", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("Argentina", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("ERR0", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    } else if(grepl("SRR", tiplabel[index]) == TRUE){
+      
+      dropVector <- append(dropVector, index)
+    }
+  }
+  return(dropVector)
+}
+
+# Function to create vector with non-EU tips to drop
+toDropNonEUTips <- function(tiplabel){
+  
+  # Create vector to store index values of tips to be dropped
+  dropVector <- c()
+  
+  # Loop thru tip labels and drop as required
+  for(index in 1:length(tiplabel)){
+    
+    # Check if part of a word is in the name and assign a colour
+    if(grepl("NewZealand", tiplabel[index]) == TRUE){
       
       dropVector <- append(dropVector, index)
     } else if(grepl("USA", tiplabel[index]) == TRUE){
@@ -885,4 +979,62 @@ calculateSummaryStatisticsPerQuarter <- function(statistics){
   }
   
   return(output)
+}
+
+# Function to generate colours based on region
+makeRegionColours <- function(realNames){
+  
+  # Copy the name vector
+  colourVec <- realNames
+  
+  # Loop thru each name
+  for(index in 1:length(colourVec)){
+    
+    # Check if part of a word is in the name and assign a colour
+    if(grepl("Ireland", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "darkgreen"
+    } else if(grepl("UK", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "firebrick4"
+    } else if(grepl("Italy", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "chartreuse4" 
+    } else if(grepl("Spain", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "goldenrod3"
+    } else if(grepl("France", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "royalblue4"
+    } else if(grepl("Scotland", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "steelblue3"
+    } else if(grepl("England", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "lightpink2"
+    } else if(grepl("Wales", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "springgreen3"
+    } else if(grepl("Germany", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "black"
+    } else if(grepl("Netherlands", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "orangered"
+    } else if(grepl("Czech", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "mediumblue"
+    } else if(grepl("Greece", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "slateblue"
+    } else if(grepl("Norway", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "purple"
+    } else {
+      
+      colourVec[index] <- "darkgreen"
+    }
+  }
+  
+  return(colourVec)
 }
