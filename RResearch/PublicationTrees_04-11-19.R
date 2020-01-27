@@ -171,27 +171,27 @@ subbedTree$tip.label <- simpleLabels
 #### Tree plotting ####
 
 # Save plot as .pdf file (Ireland)
-outputFile <- paste("VNTR_Tree.pdf", sep="")
-pdf(outputFile, height=25, width=20)
+outputFile <- paste("VNTR_Tree.png", sep="")
+png(outputFile, height=4500, width=4500)
 
 # Set margins to nothing
 currentMar <- par()$mar
 par(mar=c(0,0,0,0))
+par(bg=NA)
 
 # Plot VNTR tree
-plot.phylo(subbedTree, edge.width = 2, font = 1, label.offset = 0.2, 
+plot.phylo(subbedTree, edge.width = 15, font = 1, label.offset = 0.2, 
            tip.color = vntrTips,
-           align.tip.label = FALSE, type="phylogram", cex = 1.5)
+           align.tip.label = FALSE, type="phylogram", cex = 5)
 
 # Add the SNP scale
-add.scale.bar(x=100, y = 2, cex = 4)
-text(x=135, y =2, cex = 4, "SNPs")
+add.scale.bar(x=100, y = 2, cex = 10, lwd = 15)
+text(x=135, y =2, cex = 10, "SNPs")
 
 # Add a legend
-legend(x=115, y=110, legend = c("1", "2", "3", "13", "116"), 
+legend(x=0, y=127, legend = c("(42332228) - 1", "(32332228) - 2", "(32332218) - 3", "(22332228) - 13", "(41332228) - 116"), 
        text.col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"), 
-       bty = "n", cex = 4, y.intersp = 1)
-text(x=130, y=110, "INMV Type", cex = 4.5)
+       bty = "n", cex = 8, y.intersp = 0.7, title = "INMV Types")
 
 
 # Reset the margins
@@ -201,36 +201,38 @@ dev.off()
 
 
 # Make EU plot
-outputFile <- paste("EU-Tree.pdf", sep="")
-pdf(outputFile, height=25, width=20)
+outputFile <- paste("EU-Tree.png", sep="")
+png(outputFile, height=4500, width=4500)
 
 # Set margins to nothing
 currentMar <- par()$mar
 par(mar=c(0,0,0,0))
+par(bg=NA)
+
 
 # Plot VNTR tree
-plot.phylo(realEU, edge.width = 2, font = 1, label.offset = 0.2, 
+plot.phylo(realEU, edge.width = 20, font = 1, label.offset = 0.2, 
            show.tip.label = FALSE,
-           align.tip.label = FALSE, type="phylogram", cex = 1.6)
+           align.tip.label = FALSE, type="fan", cex = 30)
 
 #Add shaped tip labels
-tiplabels(pch = 18, col = euCols,  cex = 3)
+tiplabels(pch = 18, col = euCols,  cex = 18)
 
 # Add the SNP scale
-add.scale.bar(x=100, y = 2, cex = 4)
-text(x=135, y =2, cex = 4, "SNPs")
+add.scale.bar(x=-120, y = -100, cex = 10, lwd = 20)
+text(x=-60, y =-105, cex = 10, "SNPs")
 
 # Add a legend
-legend(x=110, y=220, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
+legend(x=82, y=-30, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
                                 "Italy", "Spain", "France", "Germany", "Netherlands",
-                                "Czech Republic", "Greece", "Norway"), 
-       text.col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "springgreen3",
-                    "chartreuse4", "goldenrod3", "royalblue4", "black", "orangered",
+                                "Czech Rep.", "Greece", "Norway"), 
+       text.col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "deeppink",
+                    "aquamarine2", "goldenrod3", "royalblue4", "black", "orangered",
                     "mediumblue", "slateblue", "purple"), pch = 18,
-       col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "springgreen3",
-                 "chartreuse4", "goldenrod3", "royalblue4", "black", "orangered",
+       col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "deeppink",
+                 "aquamarine2", "goldenrod3", "royalblue4", "black", "orangered",
                  "mediumblue", "slateblue", "purple"),
-       bty = "n", cex = 3, y.intersp = 1, title = "Country")
+       bty = "n", cex = 8.8, y.intersp = 0.6, title = "Country")
 
 
 
@@ -262,8 +264,10 @@ ranges <- mapSpatialLimits(polygonCoords, counties)
 maxNSamples <- sampleMax(sampleNumbers)
 
 # Save plot as .pdf file
-outputFile <- paste("IrishMap.pdf", sep="")
-pdf(outputFile, height=20, width=15)
+outputFile <- paste("IrishMap2.png", sep="")
+png(outputFile, height=4500, width=4500)
+
+par(bg=NA)
 
 # Create empty plot, with input of limits from above function
 plot(x=NA, y=NA,
@@ -273,20 +277,20 @@ plot(x=NA, y=NA,
      bty = "n", axes = FALSE)
 
 # Add legend
-legend("topleft", legend = c("1","2","3","4","5","6"), title="Isolates per Herd", bty="n", cex=3,
+legend("topleft", legend = c("1","2","3","4","5","6"), title="Isolates per Herd", bty="n", cex=15,
        pch = c(21,21,21,21,21,21), col = alpha("red", 0.9), pt.bg = alpha("red", 0.65), 
-       pt.cex = c(2,3,4,5,6,7), ncol = 2)
+       pt.cex = c(5,10,15,20,25,30), ncol = 2)
 
 # Add a second legend for the proportions of cattle/herds
-legend("bottomright", legend = c(0,0.03,0.06,0.09,0.12,0.15,0.18,0.21), 
-       title = "Proportion of Total Cattle Present", bty = "n", cex = 2.5, 
-       pch = rep(22,8), col = "black",
-       pt.bg = c(alpha("blue", 0.1),alpha("blue", 0.13),alpha("blue", 0.16),alpha("blue", 0.19),
-               alpha("blue", 0.22),alpha("blue", 0.25),alpha("blue", 0.28),alpha("blue", 0.31)),
-       ncol = 2, pt.cex = 6)
+#legend("bottomright", legend = c(0,0.03,0.06,0.09,0.12,0.15,0.18,0.21), 
+#       title = "Proportion of Total Cattle Present", bty = "n", cex = 2.5, 
+#       pch = rep(22,8), col = "black",
+#       pt.bg = c(alpha("blue", 0.1),alpha("blue", 0.13),alpha("blue", 0.16),alpha("blue", 0.19),
+#               alpha("blue", 0.22),alpha("blue", 0.25),alpha("blue", 0.28),alpha("blue", 0.31)),
+#       ncol = 2, pt.cex = 6)
 
 # Plot county polygons and related sample data
-polygonsSpatialData(polygonCoords, sampleNumbers, counties, newHerdNames, merged2018Cattle, cattleTotal, 3)
+polygonsSpatialData(polygonCoords, sampleNumbers, counties, newHerdNames, merged2018Cattle, 1140142, 3)
 
 dev.off()
 
@@ -798,7 +802,7 @@ polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, herdname
     
     # Calculate alpha = proportion of animals in current county
     # Cattleherd is either a 2 or a 3 depending on herd or cattle
-    proportion <- yearData[grep(counties[index], yearData[,1], ignore.case = TRUE), cattleherd]/someTotal + 0.1
+    proportion <- yearData[grep(counties[index], yearData[,1], ignore.case = TRUE), cattleherd]/someTotal
  
     # Add county name
     if(is.null(sampleNumbers[[counties[index]]]) == TRUE ){
@@ -826,7 +830,7 @@ polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, herdname
         pointSize <- length(grep(herd, herdnames))
         
         points(spsample(polygonCoords[[counties[index]]], n=1, type = "random"),
-               pch = 21, col = alpha("red", 0.9), bg = alpha("red", 0.65), cex = 1+pointSize)
+               pch = 21, col = alpha("red", 0.9), bg = alpha("red", 0.65), cex = 5*pointSize)
       }
     }
   }
@@ -999,7 +1003,7 @@ makeRegionColours <- function(realNames){
       colourVec[index] <- "firebrick4"
     } else if(grepl("Italy", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "chartreuse4" 
+      colourVec[index] <- "aquamarine2" 
     } else if(grepl("Spain", colourVec[index]) == TRUE){
       
       colourVec[index] <- "goldenrod3"
@@ -1014,7 +1018,7 @@ makeRegionColours <- function(realNames){
       colourVec[index] <- "lightpink2"
     } else if(grepl("Wales", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "springgreen3"
+      colourVec[index] <- "deeppink"
     } else if(grepl("Germany", colourVec[index]) == TRUE){
       
       colourVec[index] <- "black"
