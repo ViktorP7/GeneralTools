@@ -13,7 +13,7 @@ library(gplots)
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_30-09-19"
+pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_30-01-20"
 pathHerdStats <- "C:/Users/UCD/Documents/Lab/HerdTbStatistics_2010-2019.csv"
 niData <- "C:/Users/UCD/Documents/Lab/NICattleData2018.csv"
 
@@ -72,15 +72,15 @@ realNames <- getCVRLLabels(isoCVRLTable, TheTree)
 # Update the names in the tree
 TheTree$tip.label <- realNames
 
-# Root the tree at 473 - ancestor rooted in the Bryant paper
-rootree <- root(TheTree, node = 491)
+# Root the tree at 505 - ancestor rooted in the Bryant paper
+rootree <- root(TheTree, node = 505)
 
 # Drop tips for far away ancestors 
-dropNumbers <- c(465,466)
+dropNumbers <- c(235,236)
 droppedTree <- drop.tip(rootree, dropNumbers)
 
 # Extract the clade that doesn't have all the distant sheep and cows
-extractedTree <- extract.clade(droppedTree, node = 507)
+extractedTree <- extract.clade(droppedTree, node = 418)
 
 # Get rid of non-EU isolates for international tree
 dropInternational <- toDropNonEUTips(extractedTree$tip.label)
@@ -91,15 +91,12 @@ dropper <- toDropInternationalTips(extractedTree$tip.label)
 irishOnlytree <- drop.tip(extractedTree, dropper)
 
 # Get rid of non-relevant tips
-dropem <- c(174,175,132,133,93,94,95,96,19,2)
+dropem <- c(20,21,33,34,49,50,75,76,100,101)
 onlytree <- drop.tip(irishOnlytree, dropem)
 
-# Correct mislabel
-onlytree$tip.label[53] <- "17-5652_Cork_10_1_Cork"
-
 # Convert branch lengths to SNP values
-onlytree$edge.length <- onlytree$edge.length * 68928
-euOnlyTree$edge.length <- euOnlyTree$edge.length * 68928
+onlytree$edge.length <- onlytree$edge.length * 48524
+euOnlyTree$edge.length <- euOnlyTree$edge.length * 48524
 
 # Get the rounded values o the lengths
 roundedSNPs <- round(onlytree$edge.length)
@@ -109,13 +106,9 @@ roundedEU <- round(euOnlyTree$edge.length)
 onlytree$edge.length <- roundedSNPs
 euOnlyTree$edge.length <- roundedEU
 
-# Remove K10
-useTree <- drop.tip(onlytree, 2)
-euTree <- drop.tip(euOnlyTree, 6)
-
 # Find the distances between all isolates
-allDist <- cophenetic(useTree)
-euDist <- cophenetic(euTree)
+allDist <- cophenetic(onlytree)
+euDist <- cophenetic(euOnlyTree)
 
 # Round the distances
 allDist <- round(allDist)
@@ -130,48 +123,25 @@ for(index in 1:nrow(allDist)){
 herdNames <- getNames(allDist, "Herd")
 euHerds <- getNames(euDist, "Herd")
 
-# Get rid of all Cork 10 isolates except two
-notTheseTips <- cork10Subsampler(herdNames, useTree$tip.label)
-notCork <- cork10Subsampler(euHerds, euTree$tip.label)
-
-# Drop'em
-subbedTree <- drop.tip(useTree, notTheseTips)
-realEU <- drop.tip(euTree, notCork)
-
-# Find the distances between all isolates
-newDist <- cophenetic(subbedTree)
-
-# Round the distances
-newDist <- round(newDist)
-
-# Remove unecessary zeroes by filling with NA
-for(index in 1:nrow(newDist)){
-  
-  newDist[index, index] <- NA
-}
-
 # Get VNTR names
-vntrNames <- getNames(newDist, "VNTR")
-
-# Get herd names
-newHerdNames <- getNames(newDist, "Herd")
+vntrNames <- getNames(allDist, "VNTR")
 
 # Make VNTR colours
 vntrTips <- makeVNTRCols(vntrNames)
 
 # Make EU colours
-euCols <- makeRegionColours(realEU$tip.label)
+euCols <- makeRegionColours(euOnlyTree$tip.label)
 
 # Simplify the labels
-simpleLabels <- deconstructLabels(subbedTree$tip.label)
+simpleLabels <- deconstructLabels(onlytree$tip.label)
 
 # Assign simple labels
-subbedTree$tip.label <- simpleLabels
+onlytree$tip.label <- simpleLabels
 
 #### Tree plotting ####
 
 # Save plot as .pdf file (Ireland)
-outputFile <- paste("VNTR_Tree.png", sep="")
+outputFile <- paste("VNTR_Tree1.png", sep="")
 png(outputFile, height=4500, width=4500)
 
 # Set margins to nothing
@@ -180,16 +150,16 @@ par(mar=c(0,0,0,0))
 par(bg=NA)
 
 # Plot VNTR tree
-plot.phylo(subbedTree, edge.width = 15, font = 1, label.offset = 0.2, 
+plot.phylo(onlytree, edge.width = 15, font = 1, label.offset = 0.2, 
            tip.color = vntrTips,
            align.tip.label = FALSE, type="phylogram", cex = 5)
 
 # Add the SNP scale
-add.scale.bar(x=100, y = 2, cex = 10, lwd = 15)
-text(x=135, y =2, cex = 10, "SNPs")
+add.scale.bar(x=110, y = 5, cex = 10, lwd = 15)
+text(x=145, y =5, cex = 10, "SNPs")
 
 # Add a legend
-legend(x=0, y=127, legend = c("(42332228) - 1", "(32332228) - 2", "(32332218) - 3", "(22332228) - 13", "(41332228) - 116"), 
+legend(x=5, y=127, legend = c("(42332228) - 1", "(32332228) - 2", "(32332218) - 3", "(22332228) - 13", "(41332228) - 116"), 
        text.col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"), 
        bty = "n", cex = 8, y.intersp = 0.7, title = "INMV Types")
 
@@ -201,7 +171,7 @@ dev.off()
 
 
 # Make EU plot
-outputFile <- paste("EU-Tree.png", sep="")
+outputFile <- paste("EU-Tree1.png", sep="")
 png(outputFile, height=4500, width=4500)
 
 # Set margins to nothing
@@ -211,19 +181,19 @@ par(bg=NA)
 
 
 # Plot VNTR tree
-plot.phylo(realEU, edge.width = 20, font = 1, label.offset = 0.2, 
+plot.phylo(euOnlyTree, edge.width = 10, font = 1, label.offset = 0.2, 
            show.tip.label = FALSE,
-           align.tip.label = FALSE, type="fan", cex = 30)
+           align.tip.label = FALSE, type="phylogram", cex = 30)
 
 #Add shaped tip labels
-tiplabels(pch = 18, col = euCols,  cex = 18)
+tiplabels(pch = 18, col = euCols,  cex = 10)
 
 # Add the SNP scale
-add.scale.bar(x=-120, y = -100, cex = 10, lwd = 20)
-text(x=-60, y =-105, cex = 10, "SNPs")
+add.scale.bar(x=105, y =15, cex = 10, lwd = 15)
+text(x=140, y =15, cex = 10, "SNPs")
 
 # Add a legend
-legend(x=82, y=-30, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
+legend(x=120, y=220, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
                                 "Italy", "Spain", "France", "Germany", "Netherlands",
                                 "Czech Rep.", "Greece", "Norway"), 
        text.col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "deeppink",
@@ -252,7 +222,7 @@ counties <- c("Antrim","Armagh","Carlow","Cavan","Clare","Cork","Donegal","Down"
               "Roscommon","Sligo","Tipperary","Tyrone","Waterford","Westmeath","Wexford","Wicklow")
 
 # Get the numbers of isolates
-sampleNumbers <- numberSamples(newHerdNames)
+sampleNumbers <- numberSamples(herdNames)
 
 # Get polygon coordinates for map plotting
 polygonCoords <- getSpatialPolygons(counties, pathCoords)
@@ -264,7 +234,7 @@ ranges <- mapSpatialLimits(polygonCoords, counties)
 maxNSamples <- sampleMax(sampleNumbers)
 
 # Save plot as .pdf file
-outputFile <- paste("IrishMap2.png", sep="")
+outputFile <- paste("IrishMap3.png", sep="")
 png(outputFile, height=4500, width=4500)
 
 par(bg=NA)
@@ -290,17 +260,17 @@ legend("topleft", legend = c("1","2","3","4","5","6"), title="Isolates per Herd"
 #       ncol = 2, pt.cex = 6)
 
 # Plot county polygons and related sample data
-polygonsSpatialData(polygonCoords, sampleNumbers, counties, newHerdNames, merged2018Cattle, 1140142, 3)
+polygonsSpatialData(polygonCoords, sampleNumbers, counties, herdNames, merged2018Cattle, 1140142, 3)
 
 dev.off()
 
 #### Temporal Plot ####
 
 # Get the count matrix
-counterMatrix <- getYearCounts(newHerdNames, newDist)
+counterMatrix <- getYearCounts(herdNames, allDist)
 
 # Save plot as .pdf file
-outputFile <- paste("TemporalIsolates.pdf", sep="")
+outputFile <- paste("TemporalIsolates1.pdf", sep="")
 pdf(outputFile, height=20, width=15)
 
 par(cex.main = 2.5, cex.lab = 1.5)
@@ -354,35 +324,6 @@ getBryantLabels <- function(isoTable, TheTree){
       }else if(nameVector[index] == "Ref-1997") {
         
         nameVector[index] <- "MAP K10"
-      }else if(nameVector[index] == "6287-MAP"){
-        
-        nameVector[index] <- "14-6278_Cork_9_1"
-        
-      }else if(nameVector[index] == "14-5154"){
-        
-        nameVector[index] <- "16-5154"
-        
-      }else if(nameVector[index] == "16-4434"){
-        
-        nameVector[index] <- "16-4934"
-        
-      }else if(nameVector[index] == "14-4776"){
-        
-        nameVector[index] <- "17-4776"
-        
-      }else if(nameVector[index] == "14-2662"){
-        
-        nameVector[index] <- "14-2622"
-      }else if(nameVector[index] == "14-2662"){
-        
-        nameVector[index] <- "14-2622"
-      }else if(nameVector[index] == "17-5652"){
-        
-        nameVector[index] <- "17-6652"
-        
-      }else if(nameVector[index] == "14-7468"){
-        
-        nameVector[index] <- "14-7486"
       }else{
         
         next
@@ -822,7 +763,7 @@ polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, herdname
               border = "black", add = TRUE, col = alpha("blue", proportion))
       
       # Create a vector of herds in the current county
-      currentHerds <- unique(herdnames[grep(counties[index], newHerdNames)])
+      currentHerds <- unique(herdnames[grep(counties[index], herdNames)])
       
       # For each herd in the current county herds, count how many isolates and plot point
       for(herd in currentHerds){
