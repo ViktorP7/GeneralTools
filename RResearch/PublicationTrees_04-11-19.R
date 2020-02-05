@@ -286,6 +286,117 @@ mtext(text="HERD", side=4, line=0.5, cex = 2)
 
 dev.off()
 
+#### Stats and numbers ####
+
+# Number of herds
+length(table(herdNames))
+
+# Isolate VNTR types
+table(vntrNames)
+
+# Herds with more than 1 isolate
+sum(table(herdNames)>1)
+
+# Max SNP distance
+max(allDist, na.rm = T)
+
+# Min/Max distances for INMV 1, 2 & 3
+range(allDist[which(vntrNames == 1),which(vntrNames == 1)], na.rm=T)
+range(allDist[which(vntrNames == 2),which(vntrNames == 2)], na.rm=T)
+range(allDist[which(vntrNames == 3),which(vntrNames == 3)], na.rm=T)
+
+# INMV 116 proximity to other isolates
+range(allDist[which(vntrNames == 116),], na.rm=T)
+
+# INMV 3 isolates closest neighbour
+min(allDist[which(vntrNames == 3)[1],], na.rm=T)
+min(allDist[which(vntrNames == 3)[2],], na.rm=T)
+
+# Amount of Cork isolates & SNP distances
+length(grep("Cork", herdNames))
+range(allDist[grep("Cork", herdNames), grep("Cork", herdNames)], na.rm=T)
+median(allDist[grep("Cork", herdNames), grep("Cork", herdNames)], na.rm=T)
+
+# Same for Clare 
+length(grep("Clare", herdNames))
+range(allDist[grep("Clare", herdNames), grep("Clare", herdNames)], na.rm=T)
+median(allDist[grep("Clare", herdNames), grep("Clare", herdNames)], na.rm=T)
+
+# Westmeath 1 stats
+range(allDist[grep("Westmeath", herdNames)[4],grep("Westmeath", herdNames)],na.rm=T)
+range(allDist[grep("Westmeath", herdNames)[5],grep("Westmeath", herdNames)],na.rm=T)
+
+# Group A stats
+groupA <- extract.clade(onlytree, node = 198)
+groupAmat <- cophenetic(groupA)
+max(groupAmat)
+
+# Group A euro stats - go to FindSimilarIsolates script
+euroA <- extract.clade(euOnlyTree, node = 365)
+euroAmat <- cophenetic(euroA)
+
+for(index in 1:nrow(euroAmat)){
+  
+  euroAmat[index, index] <- NA
+}
+
+euroAmat[upper.tri(euroAmat)] <- NA
+
+# Group F euro stats - go to FindSimilarIsolates
+euroF <- extract.clade(euOnlyTree, node = 240)
+euroFmat <- cophenetic(euroF)
+
+for(index in 1:nrow(euroFmat)){
+  
+  euroFmat[index, index] <- NA
+}
+
+euroFmat[upper.tri(euroFmat)] <- NA
+
+# Group G euro stats - go to FindSimilarIsolates
+euroG <- extract.clade(euOnlyTree, node = 229)
+euroGmat <- cophenetic(euroG)
+
+for(index in 1:nrow(euroGmat)){
+  
+  euroGmat[index, index] <- NA
+}
+
+euroGmat[upper.tri(euroGmat)] <- NA
+
+# Group C
+euroC <- extract.clade(euOnlyTree, node = 316)
+euroCmat <- cophenetic(euroC)
+
+for(index in 1:nrow(euroCmat)){
+  
+  euroCmat[index, index] <- NA
+}
+
+euroCmat[upper.tri(euroCmat)] <- NA
+
+# Groups B
+euroB <- extract.clade(euOnlyTree, node = 334)
+euroBmat <- cophenetic(euroB)
+
+for(index in 1:nrow(euroBmat)){
+  
+  euroBmat[index, index] <- NA
+}
+
+euroBmat[upper.tri(euroBmat)] <- NA
+
+# Group D
+euroD <- extract.clade(euOnlyTree, node = 278)
+euroDmat <- cophenetic(euroD)
+
+for(index in 1:nrow(euroDmat)){
+  
+  euroDmat[index, index] <- NA
+}
+
+euroDmat[upper.tri(euroDmat)] <- NA
+
 #### Functions ####
 
 # Function to get the labels names for bryant isolates
@@ -983,3 +1094,33 @@ makeRegionColours <- function(realNames){
   
   return(colourVec)
 }
+
+# Function to pull out tiplabels corresponding to a VNTR type
+findVNTRs <- function(tiplabel, VNTR){
+  
+  # Create vector of tips to find
+  finderVec <- c()
+  
+  # Loop thru the tips
+  for(index in 1:length(tiplabel)){
+    
+    # Split the string and take the 3rd value
+    vntrInfo <- strsplit(tiplabel[index], split = "_")[[1]][3]
+    vntrInfo <- strsplit(tiplabel[index], split = "_")[[1]][4]
+    
+    # Skip if it's an NA
+    if(is.na(vntrInfo) == TRUE){
+      
+      next
+      
+    }else if(vntrInfo == VNTR){
+      
+      finderVec <- append(finderVec, index)
+      
+    }
+  }
+  
+  return(finderVec)
+}
+
+ 

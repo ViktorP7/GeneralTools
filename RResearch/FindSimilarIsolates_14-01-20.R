@@ -25,9 +25,23 @@ counties <- c("Antrim","Armagh","Carlow","Cavan","Clare","Cork","Donegal","Down"
               "Limerick","Derry","Longford","Louth","Mayo","Meath","Monaghan","Offaly",
               "Roscommon","Sligo","Tipperary","Tyrone","Waterford","Westmeath","Wexford","Wicklow")
 
-# Run function to find similar isolates
-similars <- findSimilars(euMat, 15, counties)
+# Run function to find similar isolates for group A
+similarsA <- findSimilars(euroAmat, 30, counties)
 
+# Run function to find similars for group F
+similarsF <- findSimilars(euroFmat, 30, counties)
+
+# Group G
+similarsG <- findSimilars(euroGmat, 30, counties)
+
+# Group C
+similarsC <- findSimilars(euroCmat, 30, counties)
+
+# Group B
+similarsB <- findSimilars(euroBmat, 30, counties)
+
+# Group D
+similarsD <- findSimilars(euroDmat, 30, counties)
 
 # Function to loop thru the matrix and find locations within the SNP threshold
 findSimilars <- function(mat, threshold, counties){
@@ -67,6 +81,14 @@ findSimilars <- function(mat, threshold, counties){
           
           
           next
+        }else if(loc1 %in% counties ==  TRUE && grepl("Ireland", loc4) == TRUE){
+          
+          
+          next
+        }else if(loc2 %in% counties ==  TRUE && grepl("Ireland", loc3) == TRUE){
+          
+          
+          next
         } else { 
           # Paste together the row and col names and SNP count
           current <- paste(matNames[row], "~", matNames[col], "~", mat[row,col])
@@ -78,3 +100,5 @@ findSimilars <- function(mat, threshold, counties){
   }
   return(vector)
 }
+
+# Function to process output 
