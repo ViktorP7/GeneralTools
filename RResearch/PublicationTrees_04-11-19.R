@@ -9,6 +9,7 @@ library(scales)
 library(sp)
 library(raster)
 library(gplots)
+library(maptools)
 
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MAP-Metadata-Formatted-May19.csv"
@@ -133,7 +134,7 @@ vntrTips <- makeVNTRCols(vntrNames)
 euCols <- makeRegionColours(euOnlyTree$tip.label)
 
 # Simplify the labels
-simpleLabels <- deconstructLabels(onlytree$tip.label)
+simpleLabels <- deconstructLabels(onlytree$tip.label, counties, shortCounties)
 
 # Assign simple labels
 onlytree$tip.label <- simpleLabels
@@ -141,7 +142,7 @@ onlytree$tip.label <- simpleLabels
 #### Tree plotting ####
 
 # Save plot as .pdf file (Ireland)
-outputFile <- paste("VNTR_Tree1.png", sep="")
+outputFile <- paste("VNTR_Tree3.png", sep="")
 png(outputFile, height=4500, width=4500)
 
 # Set margins to nothing
@@ -152,17 +153,20 @@ par(bg=NA)
 # Plot VNTR tree
 plot.phylo(onlytree, edge.width = 15, font = 1, label.offset = 0.2, 
            tip.color = vntrTips,
-           align.tip.label = FALSE, type="phylogram", cex = 5)
+           align.tip.label = FALSE, type="phylogram", cex = 4.8)
 
 # Add the SNP scale
-add.scale.bar(x=110, y = 5, cex = 10, lwd = 15)
-text(x=145, y =5, cex = 10, "SNPs")
+add.scale.bar(x=90, y = 50, cex = 8, lwd = 15)
+text(x=120, y =50, cex = 8, "SNPs")
 
 # Add a legend
-legend(x=5, y=127, legend = c("(42332228) - 1", "(32332228) - 2", "(32332218) - 3", "(22332228) - 13", "(41332228) - 116"), 
+legend(x=7, y=127, legend = c("(42332228) - 1", "(32332228) - 2", "(32332218) - 3", "(22332228) - 13", "(41332228) - 116"), 
        text.col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"), 
        bty = "n", cex = 8, y.intersp = 0.7, title = "INMV Types")
 
+# Add the group idents
+segments(x0=128, y0=c(123,72.5,67,52.5,36.5,29,9.5), y1=c(74,68,54,38,30,11,2), lwd = 5)
+text(x=130, y=c(100,70,61,46,33,20,6), c("A","B","C","D","E","F","G"), cex=8)
 
 # Reset the margins
 par(mar=currentMar)
@@ -171,7 +175,7 @@ dev.off()
 
 
 # Make EU plot
-outputFile <- paste("EU-Tree1.png", sep="")
+outputFile <- paste("EU-Tree2.png", sep="")
 png(outputFile, height=4500, width=4500)
 
 # Set margins to nothing
@@ -180,7 +184,7 @@ par(mar=c(0,0,0,0))
 par(bg=NA)
 
 
-# Plot VNTR tree
+# Plot EU tree
 plot.phylo(euOnlyTree, edge.width = 10, font = 1, label.offset = 0.2, 
            show.tip.label = FALSE,
            align.tip.label = FALSE, type="phylogram", cex = 30)
@@ -189,8 +193,8 @@ plot.phylo(euOnlyTree, edge.width = 10, font = 1, label.offset = 0.2,
 tiplabels(pch = 18, col = euCols,  cex = 10)
 
 # Add the SNP scale
-add.scale.bar(x=105, y =15, cex = 10, lwd = 15)
-text(x=140, y =15, cex = 10, "SNPs")
+add.scale.bar(x=105, y=12, cex = 8, lwd = 15)
+text(x=136, y=12, cex = 8, "SNPs")
 
 # Add a legend
 legend(x=120, y=220, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
@@ -204,7 +208,9 @@ legend(x=120, y=220, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
                  "mediumblue", "slateblue", "purple"),
        bty = "n", cex = 8.8, y.intersp = 0.6, title = "Country")
 
-
+# Add the group idents
+segments(x0=154, y0=c(213.5,142,111.5,93.5,57.5,48,18), y1=c(145,114,97.5,59,49.5,19.5,6.5), lwd = 5)
+text(x=156, y=c(180,129,104,75,53,34,12), c("A","B","C","D","E","F","G"), cex=8)
 
 # Reset the margins
 par(mar=currentMar)
@@ -221,6 +227,9 @@ counties <- c("Antrim","Armagh","Carlow","Cavan","Clare","Cork","Donegal","Down"
               "Limerick","Derry","Longford","Louth","Mayo","Meath","Monaghan","Offaly",
               "Roscommon","Sligo","Tipperary","Tyrone","Waterford","Westmeath","Wexford","Wicklow")
 
+shortCounties <- c("AnNI", "ArNI", "CW", "CN", "CE", "C", "DL", "DoNI", "D", "FNI", "G", "KY", "KE", "KK", "LS", "LM",
+                   "L", "DeNI", "LD", "LH", "MO", "MH", "MN", "OY", "RN", "SO", "T", "TNI", "W", "WH", "WX", "WW")
+
 # Get the numbers of isolates
 sampleNumbers <- numberSamples(herdNames)
 
@@ -234,7 +243,7 @@ ranges <- mapSpatialLimits(polygonCoords, counties)
 maxNSamples <- sampleMax(sampleNumbers)
 
 # Save plot as .pdf file
-outputFile <- paste("IrishMap3.png", sep="")
+outputFile <- paste("IrishMap4.png", sep="")
 png(outputFile, height=4500, width=4500)
 
 par(bg=NA)
@@ -252,15 +261,15 @@ legend("topleft", legend = c("1","2","3","4","5","6"), title="Isolates per Herd"
        pt.cex = c(5,10,15,20,25,30), ncol = 2)
 
 # Add a second legend for the proportions of cattle/herds
-#legend("bottomright", legend = c(0,0.03,0.06,0.09,0.12,0.15,0.18,0.21), 
-#       title = "Proportion of Total Cattle Present", bty = "n", cex = 2.5, 
-#       pch = rep(22,8), col = "black",
-#       pt.bg = c(alpha("blue", 0.1),alpha("blue", 0.13),alpha("blue", 0.16),alpha("blue", 0.19),
-#               alpha("blue", 0.22),alpha("blue", 0.25),alpha("blue", 0.28),alpha("blue", 0.31)),
-#       ncol = 2, pt.cex = 6)
+legend("bottomright", legend = c(0,0.032,0.064,0.096,0.128,0.16), 
+       title = "Proportion of Total Cattle Present", bty = "n", cex = 9, 
+       pch = rep(22,8), col = "black",
+       pt.bg = c(alpha("blue", 0),alpha("blue", 0.2),alpha("blue", 0.4),alpha("blue", 0.6),
+                 alpha("blue", 0.8),alpha("blue", 1)),
+       ncol = 2, pt.cex = 10)
 
 # Plot county polygons and related sample data
-polygonsSpatialData(polygonCoords, sampleNumbers, counties, herdNames, merged2018Cattle, 1140142, 3)
+polygonsSpatialData(polygonCoords, sampleNumbers, counties, shortCounties, herdNames, merged2018Cattle, 1140142, 3)
 
 dev.off()
 
@@ -715,7 +724,7 @@ makeVNTRCols <- function(realNames){
 }
 
 # Function to simplify the labels
-deconstructLabels <- function(tiplabel){
+deconstructLabels <- function(tiplabel, counties, shortCounties){
   
   # Copy vector
   newtips <- rep(NA, length(tiplabel))
@@ -726,9 +735,13 @@ deconstructLabels <- function(tiplabel){
     # Split up the different parts of the tip label
     one <- strsplit(tiplabel[index], split = "_")[[1]][2]
     two <- strsplit(tiplabel[index], split = "_")[[1]][3]
+    date <- strsplit(tiplabel[index], split = "-")[[1]][1]
+    
+    # Find which index in counties the tip county is and store shortened version
+    short <- shortCounties[which(one == counties)]
     
     # Store herd
-    herd <- paste(one,two)
+    herd <- paste(date,short,two)
     
     # Store birth location
     birth <- strsplit(tiplabel[index], split = "_")[[1]][5]
@@ -745,7 +758,11 @@ deconstructLabels <- function(tiplabel){
       newtips[index] <- yoke
     } else {
       
-      thing <- paste(herd,"(",birth,")")
+      shortB <- shortCounties[which(birth == counties)]
+      
+      birthstring <- paste("(",shortB,")", sep = "")
+      
+      thing <- paste(herd, birthstring)
       
       newtips[index] <- thing
     }
@@ -848,7 +865,7 @@ sampleMax <- function(sampleNumbers) {
 }
 
 # Fill polygons on map plot
-polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, herdnames, yearData, someTotal, cattleherd) {
+polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, shortCounties, herdnames, yearData, someTotal, cattleherd) {
   
   for(index in 1:length(counties)) {
     
@@ -872,6 +889,9 @@ polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, herdname
       # Plot the polygon of the current county
       plot(polygonCoords[[counties[index]]],
               border = "black", add = TRUE, col = alpha("blue", proportion))
+      
+      # Add county name
+      pointLabel(coordinates(polygonCoords[[counties[index]]]), labels = shortCounties[index], cex = 5)
       
       # Create a vector of herds in the current county
       currentHerds <- unique(herdnames[grep(counties[index], herdNames)])
