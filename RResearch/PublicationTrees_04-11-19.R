@@ -142,8 +142,8 @@ onlytree$tip.label <- simpleLabels
 #### Tree plotting ####
 
 # Save plot as .pdf file (Ireland)
-outputFile <- paste("VNTR_Tree3.png", sep="")
-png(outputFile, height=4500, width=4500)
+outputFile <- paste("VNTR_Tree4.pdf", sep="")
+pdf(outputFile, height=75, width=75)
 
 # Set margins to nothing
 currentMar <- par()$mar
@@ -206,7 +206,7 @@ legend(x=120, y=220, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
        col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "deeppink",
                  "aquamarine2", "goldenrod3", "royalblue4", "black", "orangered",
                  "mediumblue", "slateblue", "purple"),
-       bty = "n", cex = 8.8, y.intersp = 0.6, title = "Country")
+       bty = "n", cex = 8.8, y.intersp = 0.8, title = "Country")
 
 # Add the group idents
 segments(x0=154, y0=c(213.5,142,111.5,93.5,57.5,48,18), y1=c(145,114,97.5,59,49.5,19.5,6.5), lwd = 5)
@@ -603,40 +603,6 @@ toDropNonEUTips <- function(tiplabel){
   return(dropVector)
 }
 
-# Function to remove Cork 10 apart from 2 random isolates
-cork10Subsampler <- function(herdNames, tips){
-  
-  # Vector to store indexes
-  indexes <- c()
-  
-  # Loop thru each herd
-  for(herd in unique(herdNames)){
-    
-    # Check if the herd is Cork 10
-    if(herd == "Cork _ 10"){
-      
-      # Subsample from the big herd
-      subs <- sample(which(herdNames %in% herd), 2, replace = FALSE)
-      
-      # Place subsample indexes in
-      indexes <- append(indexes, subs)
-    } else{
-      
-      # Pull out the indexes and place in indexes vector
-      indexes <- append(indexes, which(herdNames %in% herd))
-    }
-  }
-  
-  # Create vector of indexes from tips 
-  tipper <- c(1:length(tips))
-  
-  # Get rid of indexes from tips
-  tipsOut <- tipper[-indexes]
-  
-  return(tipsOut)
-  
-}
-
 # Function to pull out matrix names and simplify to chosen
 getNames <- function(mat, chosen){
   
@@ -890,8 +856,6 @@ polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, shortCou
       plot(polygonCoords[[counties[index]]],
               border = "black", add = TRUE, col = alpha("blue", proportion))
       
-      # Add county name
-      pointLabel(coordinates(polygonCoords[[counties[index]]]), labels = shortCounties[index], cex = 5)
       
       # Create a vector of herds in the current county
       currentHerds <- unique(herdnames[grep(counties[index], herdNames)])
@@ -904,6 +868,8 @@ polygonsSpatialData <- function(polygonCoords, sampleNumbers, counties, shortCou
         points(spsample(polygonCoords[[counties[index]]], n=1, type = "random"),
                pch = 21, col = alpha("red", 0.9), bg = alpha("red", 0.65), cex = 5*pointSize)
       }
+      # Add county name
+      pointLabel(coordinates(polygonCoords[[counties[index]]]), labels = shortCounties[index], cex = 7)
     }
   }
 }
