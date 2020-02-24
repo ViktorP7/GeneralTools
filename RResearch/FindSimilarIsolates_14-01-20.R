@@ -100,5 +100,4 @@ findSimilars <- function(mat, threshold, counties){
   }
   return(vector)
 }
-
-# Function to process output 
+ 
