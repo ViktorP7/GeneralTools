@@ -22,33 +22,38 @@ herdNames <- getNames(allDist, "Herd")
 sampleNumbers <- numberSamples(herdNames)
 
 # Get polygon coordinates for map plotting
-polygonCoords <- getPolygonCoords(counties, pathCoords)
+normalPolygonCoords <- getPolygonCoords(counties, pathCoords)
 
 # Calculate limits of plot
-ranges <- mapLimits(polygonCoords, counties)
+normalranges <- mapLimits(normalPolygonCoords, counties)
 
 # Calculate the max number of samples
 maxNSamples <- sampleMax(sampleNumbers)
-
-# Create empty plot, with input of limits from above function
-plot(x=NA, y=NA,
-     xlim = c(ranges[1], ranges[2]), 
-     ylim = c(ranges[3], ranges[4]),
-     main = "", xlab = "", ylab = "",
-     bty = "n", axes = FALSE)
-
-# Add legend
-legend("topleft", legend="Isolates/Herds", bty="n", cex=1.6)
-
-# Plot county polygons and related sample data
-polygonsData(polygonCoords, sampleNumbers, counties)
 
 # Get the birth and current county of isolates
 countyNames <- getNames(allDist, "CCounty")
 birthcountyNames <- getNames(allDist, "BCounty")
 
+# Save plot as .pdf file
+outputFile <- paste("IrishArrowMap.pdf", sep="")
+pdf(outputFile, height=75, width=75)
+
+par(bg=NA)
+
+# Create empty plot, with input of limits from above function
+plot(x=NA, y=NA,
+     xlim = c(normalranges[1], normalranges[2]), 
+     ylim = c(normalranges[3], normalranges[4]),
+     main = "", xlab = "", ylab = "",
+     bty = "n", axes = FALSE)
+
+# Plot county polygons and related sample data
+polygonsData(normalPolygonCoords, sampleNumbers, counties)
+
 # Add birth to current county arrows onto map
-addArrows(countyNames, birthcountyNames, polygonCoords)
+addArrows(countyNames, birthcountyNames, normalPolygonCoords)
+
+dev.off()
 
 # Plot small map
 smallMap(polygonCoords, counties)
@@ -268,11 +273,11 @@ polygonsData <- function(polygonCoords, sampleNumbers, counties) {
       countyLabel <- paste(nSamples, "/", nHerdsSamples, sep = "")
       
       # Add label
-      text(x= meanX,
-           y= meanY,
-           labels = countyLabel,
-           col = colour,
-           cex = 2) 
+      #text(x= meanX,
+      #     y= meanY,
+      #     labels = countyLabel,
+      #     col = colour,
+      #     cex = 2) 
     }
   }
 }
@@ -351,16 +356,16 @@ addArrows <- function(countynames, birthcountynames, polygonCoords) {
       
       if(weight == 2){
         
-        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.8), length = 0.1, lwd = weight+1)
+        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.8), length = 0.1, lwd = weight+10)
       } else if(weight == 3){
         
-        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.6), length = 0.1, lwd = weight+1)
+        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.6), length = 0.1, lwd = weight+10)
       } else if(weight > 3){
         
-        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.4), length = 0.1, lwd = weight+1)
+        arrows(meanXB, meanYB, meanXC, meanYC, col = alpha(colour, 0.4), length = 0.1, lwd = weight+10)
       } else {
         
-        arrows(meanXB, meanYB, meanXC, meanYC, col = colour, length = 0.1, lwd = weight+1)
+        arrows(meanXB, meanYB, meanXC, meanYC, col = colour, length = 0.1, lwd = weight+10)
       }
     }  
   }  
