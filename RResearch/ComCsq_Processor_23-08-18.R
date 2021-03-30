@@ -3,14 +3,15 @@ library(openxlsx)
 library(scales)
 
 # Set path variable
-path <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/ConsequencePipeRuns/ComCsq_2019-04-24.tsv"
+path <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/SarahProject/CsqRerun/ComCsq_2020-11-27.tsv"
 
 # Read in table of isolates
 csqTable <- read.table(path,
                        header = TRUE,
                        sep = "\t",
                        stringsAsFactors=FALSE, # Strings are not designated as factors
-                       check.names=FALSE) # Names left as they are, no dots inserted
+                       check.names=FALSE,
+                       quote = "") # Names left as they are, no dots inserted
 
 # Remove the empty bogey column
 csqTable <- csqTable[,-length(colnames(csqTable))]

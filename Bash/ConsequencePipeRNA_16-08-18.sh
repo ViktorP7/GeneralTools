@@ -7,6 +7,7 @@
 # State exact names of reference and gff, not "."
 # 24-04-19 Updated to remove unecessary intermediates, speeded up unzipping
 # 29-10-20 Removed trimming for the moment, updated parameters
+# 25-11-20 Changed aligner to use unpaired data (as well as other steps) - CIT RNA seqs are unpaired replicates!!!
 
 # Requirements - Please install pigz, it is faster than gzip and gunzip on account of multithreading
 
@@ -23,11 +24,10 @@ FastqFiles=(`ls | grep "$FastqFileEnding$"`)
 NumFastqs=${#FastqFiles[@]}
 
 # Initiate a for loop to loop thru the fastq files and process them 
-for (( i=0; i<${NumFastqs}; i+=2)) 
+for (( i=0; i<${NumFastqs}; i+=1)) 
 do
 	# Get each pair
 	PairOne=${FastqFiles[$i]}
-	PairTwo=${FastqFiles[$i+1]}
 
 	# Create identifier prefix
 	PairID=`echo $PairOne | awk '{ split($0, array, "_"); print array[1] }'`
@@ -36,14 +36,22 @@ do
 	echo -e "Beginning alignment of trimmed files... \e[0m"
 
 	# Variables to store sam, bam sorted bam and indexed bam
-	Samfile=$PairID"_aln-pe.sam"
+	Samfile=$PairID"_aln-se.sam"
 	Bamfile=$PairID".bam"
 	SortedBam=$PairID"_srtd.bam"
 	IndexedBam=$SortedBam".bai"
 	NDupBam=$PairID"_srtd_ndup.bam"
 
-	# Align to reference with bwa mem and pipe to samtools to create, sort and index a bam file
-	bwa mem -P $PathToReference $PairOne $PairTwo > $Samfile
+	# Align using bwa aln
+	FILE1SAI=$PairOne".sai"
+	bwa aln -t 4 $PathToReference $PairOne > $FILE1SAI
+
+	# Generate SAM file
+	# -f Flag: SAM file to output results
+	bwa samse -f $Samfile $PathToReference $FILE1SAI $PairOne 
+	
+	# Remove unwanted files
+	rm $FILE1SAI
 	
 	samtools view -b $Samfile > $Bamfile
 	samtools sort $Bamfile -o $SortedBam
@@ -57,7 +65,7 @@ do
 	BcfFile=$PairID".bcf"
 
 	# Create a bcf file with samtools
-	samtools mpileup --min-MQ 60 --uncompressed --fasta-ref $PathToReference $NDupBam > $BcfFile
+	samtools mpileup --min-MQ 10 --uncompressed --fasta-ref $PathToReference $NDupBam > $BcfFile
 
 	# Progress
 	echo -e "\e[1;31m Bcf file created, calling variants... \e[0m"
