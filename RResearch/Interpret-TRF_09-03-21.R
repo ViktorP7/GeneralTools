@@ -2,6 +2,7 @@ library(Biostrings)
 library(DECIPHER)
 
 location = "C:/Users/UCD/Desktop/UbuntuSharedFolder/ResultsTRF/"
+pathMeta <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaOct2020Format.csv"
 
 # Script to parse TRF output and write results to file
 files <- list.files(path = location, pattern = "\\.dat$")
@@ -39,6 +40,15 @@ for(index in 1:length(files)){
 }
 
 write.csv(resultFrame, file = paste(format(Sys.time(), "%Y-%m-%d"),"VNTRresults.csv",sep = "_"))
+
+metaTable <- read.table(pathMeta,
+                           header = TRUE,
+                           sep = ",",
+                           stringsAsFactors=FALSE, 
+                           check.names=FALSE)
+
+# Check real vs computed VNTR
+comparison <- compareVNTRs(resultFrame, metaTable, 169)
   
 
 # Function that rounds up at .5
@@ -62,9 +72,26 @@ repeatScanner <- function(reLength, reSeq, inTable, outTable, reNum, currFile){
   
   interTable <- data.frame()
   
-  for(row in 1:nrow(inTable)){
+  if(reNum == 8){
   
-    if(inTable[row,5] == reLength[reNum] && inTable[row,8] >= 100){
+    alifilter <- 100
+    indfilter <- 20
+  } else if(reNum == 5) {
+    
+    alifilter <- 90
+    indfilter <- 3
+  } else if(reNum == 6){
+    
+    alifilter <- 90
+    indfilter <- 10
+  } else{
+    alifilter <- 90
+    indfilter <- 5
+  }
+  for(row in 1:nrow(inTable)){
+    
+  # Filter by repeat length, alignment score and indel presence between repeats
+    if(inTable[row,5] == reLength[reNum] && inTable[row,8] >= alifilter && inTable[row,7] <= indfilter){
     
       interTable <- rbind(interTable, inTable[row,])
     }
@@ -101,6 +128,26 @@ repeatScanner <- function(reLength, reSeq, inTable, outTable, reNum, currFile){
       } else if(length(bestmatch) >= 2 && reNum == 1) {
         
         outTable[currFile, reNum] <- rounder(interTable[bestmatch[1],4] + interTable[bestmatch[2],4])
+      } else if(length(bestmatch) >=2 && reNum ==8){
+        
+        topscorealn <- which(max(interTable[bestmatch,8]) == interTable[bestmatch, 8])
+        
+        outTable[currFile, reNum] <- rounder(interTable[bestmatch[topscorealn],4])
+      } else if(length(bestmatch) >=2){
+        
+        topscoreadj <- which(max(interTable[bestmatch,6]) == interTable[bestmatch, 6])
+        topscoreind <- which(min(interTable[bestmatch,7]) == interTable[bestmatch, 7])
+        
+        if(length(topscoreadj) == 1 && length(topscoreind) == 1 && topscoreadj == topscoreind){
+          
+          toptop <- topscoreadj
+        } else if(topscoreadj %in% topscoreind){
+          toptop = topscoreadj
+        }else{
+          toptop = topscoreind[1]
+        }
+        
+        outTable[currFile, reNum] <- rounder(interTable[bestmatch[toptop],4])
       }
     } else if(length(bestmatch) ==1){
       
@@ -108,9 +155,57 @@ repeatScanner <- function(reLength, reSeq, inTable, outTable, reNum, currFile){
         
     } else{
         
-      outTable[currFile, reNum] <- rounder(interTable[bestmatch[1],4] + interTable[bestmatch[2],4])
+      topscoreadj <- which(max(interTable[bestmatch,6]) == interTable[bestmatch, 6])
+      topscoreind <- which(min(interTable[bestmatch,7]) == interTable[bestmatch, 7])
+      
+      if(length(topscoreadj) == 1 && length(topscoreind) == 1 && topscoreadj == topscoreind){
+        
+        toptop <- topscoreadj
+      } else if(topscoreadj %in% topscoreind){
+        toptop = topscoreadj
+      }else{
+        toptop = topscoreind[1]
+      }
+      
+      outTable[currFile, reNum] <- rounder(interTable[bestmatch[toptop],4])
     }
   }
   
   return(outTable)
+}
+
+# Convert results to types and compare
+compareVNTRs <- function(resTable, meta, qLen){
+  
+  outVect <- rep(NA, qLen)
+
+  for(row in 1:qLen){
+    
+    if(meta[row,14] == 1){
+      
+      currvec <- c(4,2,3,3,2,2,2,8)
+    } else if(meta[row,14] == 2){
+      
+      currvec <- c(3,2,3,3,2,2,2,8)
+      
+    }else if(meta[row,14] == 3){
+      
+      currvec <- c(3,2,3,3,2,2,1,8)
+      
+    } else if(meta[row,14] == 13){
+      
+      currvec <- c(2,2,3,3,2,2,2,8)
+      
+    }else if(meta[row,14] == 116){
+      
+      currvec <- c(4,1,3,3,2,2,2,8)
+      
+    }
+    
+    diffVec = resTable[row,] - currvec
+    
+    outVect[row] = length(which(diffVec != 0))
+    
+  }
+  return(outVect)
 }
