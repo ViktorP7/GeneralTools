@@ -8,10 +8,10 @@ library(phytools)
 library(scales)
 
 # Set path variables
-pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaOct2020Format.csv"
+predpathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaOct2020Format-PredictedVNTR.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
 pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_04-03-21"
-pathNI <- "C:/Users/UCD/Documents/Lab/CVRL MAP/NIMetaOct2020.csv"
+predpathNI <- "C:/Users/UCD/Documents/Lab/CVRL MAP/NIMetaOct2020-PredictedVNTR.csv"
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso,
@@ -21,14 +21,14 @@ isoBryantTable <- read.table(pathBryantIso,
                              check.names=FALSE) # Names left as they are, no dots inserted
 
 # Read in table of CVRL isolates
-isoCVRLTable <- read.table(pathNewIso,
+pisoCVRLTable <- read.table(predpathNewIso,
                            header = TRUE,
                            sep = ",",
                            stringsAsFactors=FALSE, 
                            check.names=FALSE)
 
 # Read in table of NI isolates
-isoNITable <- read.table(pathNI,
+pisoNITable <- read.table(predpathNI,
                          header = TRUE,
                          sep = ",",
                          stringsAsFactors=FALSE, 
@@ -59,16 +59,16 @@ realNames <- getBryantLabels(isoBryantTable, reRoot)
 reRoot$tip.label <- realNames
 
 # Get metadata for CVRL isolates
-realNames <- getCVRLLabels(isoCVRLTable, reRoot)
+prealNames <- getCVRLLabels(pisoCVRLTable, reRoot)
 
 # Update the names in the tree
-reRoot$tip.label <- realNames
+reRoot$tip.label <- prealNames
 
 # Get metadata for NI isolates
-realNames <- getNILabels(isoNITable, reRoot)
+prealNames <- getNILabels(pisoNITable, reRoot)
 
 # Update names
-reRoot$tip.label <- realNames
+reRoot$tip.label <- prealNames
 
 # Get rid of the non-irish isolates
 dropper <- toDropInternationalTips(reRoot$tip.label)
@@ -83,16 +83,16 @@ onlytree$edge.length <- round(onlytree$edge.length * 7843)
 reRoot$edge.length <- round(reRoot$edge.length * 7843)
 
 # Find the distances between all isolates
-allDist <- cophenetic(onlytree)
+pallDist <- cophenetic(onlytree)
 euDist <- cophenetic(reRoot)
 
 # Round the distances
-allDist <- round(allDist)
+pallDist <- round(pallDist)
 
 # Remove unecessary zeroes by filling with NA
-for(index in 1:nrow(allDist)){
+for(index in 1:nrow(pallDist)){
   
-  allDist[index, index] <- NA
+  pallDist[index, index] <- NA
 }
 
 # Get the herd names
@@ -105,7 +105,7 @@ birthcountyNames <- getNames(allDist, "BCounty")
 sameness <- getNames(allDist, "Same")
 
 # Get VNTR names
-vntrNames <- getNames(allDist, "VNTR")
+pvntrNames <- getNames(pallDist, "VNTR")
 
 # Make VNTR colours
 vntrTips <- makeVNTRCols(vntrNames)
@@ -233,20 +233,20 @@ dev.off()
 
 #### Code for clustering analyses of herds/vntrs/counties ####
 
-distList <- getWithinBetween(allDist, vntrNames, FALSE)
+pvdistList <- getWithinBetween(pallDist, pvntrNames, FALSE)
 
 # Get the difference of the means
-diffWB <- median(distList$Between) - median(distList$Within) 
+pdiffWB <- median(pvdistList$Between) - median(pvdistList$Within) 
 
 # Plot a boxplot comparing within and between
-boxplot(distList$Within, distList$Between, 
-        main = "SNP distances within & between VNTR types", 
+boxplot(pvdistList$Within, pvdistList$Between, 
+        main = "SNP distances within & between predicted VNTR types", 
         names = c("Within", "Between"),
         ylab = "SNP Difference")
-stripchart(distList$Within, add = TRUE, at =1, 
+stripchart(pvdistList$Within, add = TRUE, at =1, 
            method = "jitter", vertical = TRUE, col = alpha("lightblue",0.4),
            pch = 4)
-stripchart(distList$Between, add = TRUE, at =2, 
+stripchart(pvdistList$Between, add = TRUE, at =2, 
            method = "jitter", vertical = TRUE, col = alpha("lightgreen",0.4),
            pch = 4)
 
@@ -257,11 +257,11 @@ medianVector <- rep(NA, 10000)
 
 # Do the same except this time shuffle 10k times
 for(run in 1:10000){
-distRunnerList <- getWithinBetween(allDist, vntrNames, TRUE)
-
-# Get the difference of the means
-medianVector[run] <- median(distRunnerList$Between) - median(distRunnerList$Within) 
-
+  distRunnerList <- getWithinBetween(allDist, vntrNames, TRUE)
+  
+  # Get the difference of the means
+  medianVector[run] <- median(distRunnerList$Between) - median(distRunnerList$Within) 
+  
 }
 
 # Plot as histogram
@@ -275,10 +275,10 @@ h <- hist(medianVector, breaks=30, plot=FALSE)
 cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
 
 plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
-main="Distribution of differences between medians", xlim=c(xmin, 25), cex.axis=0.8, las=1)
+     main="Distribution of differences between medians", xlim=c(xmin, 25), cex.axis=0.8, las=1)
 lines(c(diffWB,diffWB), c(0, max(h$counts)), col="blue", lwd=3)
 text(20, 750, cex = 0.9,
-paste("Actual Value\n= ", round(diffWB, digits=2)), col="blue")
+     paste("Actual Value\n= ", round(diffWB, digits=2)), col="blue")
 
 cdistList <- getWithinBetween(allDist, countyNames, FALSE)
 

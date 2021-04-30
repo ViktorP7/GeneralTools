@@ -2,7 +2,7 @@ library(Biostrings)
 library(DECIPHER)
 
 location = "C:/Users/UCD/Desktop/UbuntuSharedFolder/ResultsTRF/"
-pathMeta <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaOct2020Format.csv"
+pathMeta <- "C:/Users/UCD/Documents/Lab/CVRL MAP/ForComparisonMetaApr2021Format.csv"
 
 # Script to parse TRF output and write results to file
 files <- list.files(path = location, pattern = "\\.dat$")
@@ -39,7 +39,19 @@ for(index in 1:length(files)){
   } 
 }
 
-write.csv(resultFrame, file = paste(format(Sys.time(), "%Y-%m-%d"),"VNTRresults.csv",sep = "_"))
+finalFrame <- data.frame(matrix(nrow = length(files), ncol = 1))
+
+colnames(finalFrame) <- c("INMV Code")
+
+rownames(finalFrame) <- sapply(strsplit(files, "\\."), "[", 1)
+
+for(row in 1:nrow(resultFrame)){
+  
+  finalFrame[row,1] <- paste(resultFrame[row,],collapse = "")
+}
+
+
+write.csv(finalFrame, file = paste(format(Sys.time(), "%Y-%m-%d"),"VNTRresults.csv",sep = "_"))
 
 metaTable <- read.table(pathMeta,
                            header = TRUE,
@@ -48,7 +60,7 @@ metaTable <- read.table(pathMeta,
                            check.names=FALSE)
 
 # Check real vs computed VNTR
-comparison <- compareVNTRs(resultFrame, metaTable, 169)
+comparison <- compareVNTRs(resultFrame, metaTable, 171)
   
 
 # Function that rounds up at .5
