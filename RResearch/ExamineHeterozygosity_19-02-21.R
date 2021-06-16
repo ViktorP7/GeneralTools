@@ -3,7 +3,7 @@ library(openxlsx)
 library(scales)
 
 # Set path variable
-pathAD <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/MAPAncestors/vcfFiles/AD_2021-03-15.tsv"
+pathAD <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/MAPAncestors/vcfFiles/AD_2021-05-27.tsv"
 
 # Read in table of isolates
 adTable <- read.table(pathAD,
@@ -17,9 +17,9 @@ adTable <- read.table(pathAD,
 adTable <- adTable[,-length(colnames(adTable))]
 
 # Save plots in pdf
-pdf("HetSummary_15-03-21.pdf")
+pdf("HetSummary_27-05-21.pdf")
 
-layout(matrix(c(1:length(colnames(adTable))-1)), nrow=4, ncol=4, byrow=TRUE)
+#layout(matrix(c(1:length(colnames(adTable))-1)), nrow=4, ncol=4, byrow=TRUE)
 
 # Loop thru the isolates and create a plot for each
 for(index in 2:length(colnames(adTable))){
@@ -41,8 +41,8 @@ for(index in 2:length(colnames(adTable))){
   
   for(position in 1:length(valvector)){
     
-    curRef <- as.numeric(strsplit(valvector[position], split = ",")[[1]][1])
-    curAlt <- as.numeric(strsplit(valvector[position], split = ",")[[1]][2])
+    curRef <- as.numeric(strsplit(as.character(valvector[position]), split = ",")[[1]][1])
+    curAlt <- as.numeric(strsplit(as.character(valvector[position]), split = ",")[[1]][2])
     totalDP <- sum(curRef, curAlt)
     propRef <- round(curRef/totalDP, digits = 2)
     propAlt <- round(curAlt/totalDP, digits = 2)

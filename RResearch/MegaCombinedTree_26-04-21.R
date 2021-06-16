@@ -1,6 +1,4 @@
-# Created 18-02-20
-# Script to process and visualise phylogenetic trees
-# Please run this FIRST, as it is a PREREQUISITE for the other scripts to work
+# Created 26-04-21
 
 # Load packages
 library(ape)
@@ -8,12 +6,13 @@ library(phytools)
 library(scales)
 
 # Set path variables
-pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaOct2020Format.csv"
+pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaMay2021Format.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
-pathBigTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/GenieBigMAP/RAxML_bipartitions.RaxML-R_23-04-21"
+pathBigTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/GenieBigMAP/FullRunMay30/RAxML_bipartitions.RaxML-R_02-06-21"
 pathNI <- "C:/Users/UCD/Documents/Lab/CVRL MAP/NIMetaOct2020.csv"
 pathAus <- "C:/Users/UCD/Documents/Lab/AustraliaMetadata.csv"
 pathCan <- "C:/Users/UCD/Documents/Lab/CanadaMetadata.csv"
+pathUS <- "C:/Users/UCD/Documents/Lab/USMeta.txt"
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso, header = TRUE, sep = ",", stringsAsFactors=FALSE, check.names=FALSE)
@@ -29,14 +28,8 @@ ausTable <- read.table(pathAus, header = TRUE, sep = ",", stringsAsFactors = FAL
 
 canTable <- read.table(pathCan, header = TRUE, sep = ",", stringsAsFactors = FALSE, check.names = FALSE)
 
-# Vector with all county names for the map
-counties <- c("Antrim","Armagh","Carlow","Cavan","Clare","Cork","Donegal","Down",
-              "Dublin","Fermanagh","Galway","Kerry","Kildare","Kilkenny","Laois","Leitrim",
-              "Limerick","Derry","Longford","Louth","Mayo","Meath","Monaghan","Offaly",
-              "Roscommon","Sligo","Tipperary","Tyrone","Waterford","Westmeath","Wexford","Wicklow")
+usTable<- read.table(pathUS, header = TRUE, sep = ",", stringsAsFactors = FALSE, check.names = FALSE)
 
-shortCounties <- c("AnNI", "ArNI", "CW", "CN", "CE", "C", "DL", "DoNI", "D", "FNI", "G", "KY", "KE", "KK", "LS", "LM",
-                   "L", "DeNI", "LD", "LH", "MO", "MH", "MN", "OY", "RN", "SO", "T", "TNI", "W", "WH", "WX", "WW")
 
 #### Tree file processing ####
 
@@ -44,10 +37,10 @@ shortCounties <- c("AnNI", "ArNI", "CW", "CN", "CE", "C", "DL", "DoNI", "D", "FN
 BigTree <- read.tree(pathBigTree)
 
 # Root on another node
-BigRoot <- root(BigTree, node = 1292)
+BigRoot <- root(BigTree, node = 1301)
 
 # Drop sheep isolates and avium
-tipstogo <- c(457:556)
+tipstogo <- c(185:280)
 noSTree <- drop.tip(BigRoot, tipstogo)
 
 # Get the Bryant names
@@ -124,33 +117,29 @@ dev.off()
 
 
 # Make EU plot pdf
-outputFile <- paste("World-Tree_26-04-21.pdf", sep="")
+outputFile <- paste("World-Tree_28-04-21.pdf", sep="")
 pdf(outputFile, height=75, width=75)
 
 # Plot EU tree
 plot.phylo(noSTree, edge.width = 6, font = 1, label.offset = 0.2, 
            show.tip.label = FALSE,
-           align.tip.label = FALSE, type="phylogram", cex = 30, no.margin = TRUE)
+           align.tip.label = FALSE, type="fan", cex = 30, no.margin = TRUE)
 
 
 #Add shaped tip labels
-tiplabels(pch = 18, col = worldCols,  cex = 6)
+tiplabels(pch = 18, col = worldCols,  cex = 8)
 
 # Add the SNP scale
-add.scale.bar(x=75, y=0, cex = 10, lwd = 15)
-text(x=142, y=0, cex = 10, "SNPs")
+add.scale.bar(x=-100, y=-80, cex = 10, lwd = 15)
+text(x=-75, y=-85, cex = 10, "SNPs")
 
 # Add a legend
-#legend(x=150, y=280, legend = c("Ireland", "UK", "England", "Scotland", "Wales",
-#                                "Italy", "Spain", "France", "Germany", "Netherlands",
-#                                "Czech Rep.", "Greece", "Norway"), 
-#       text.col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "deeppink",
-#                    "aquamarine2", "goldenrod3", "royalblue4", "black", "orangered",
-#                    "mediumblue", "slateblue", "purple"), pch = 18,
-#       col = c("darkgreen", "firebrick4", "lightpink2", "steelblue3", "deeppink",
-#               "aquamarine2", "goldenrod3", "royalblue4", "black", "orangered",
-#               "mediumblue", "slateblue", "purple"),
-#       bty = "n", cex = 10, y.intersp = 0.8, title = "Country", title.col = "black")
+legend(x=-100, y=100, legend = c("Ireland", "UK", "Continental Europe","Canada (& USA)", "Australia (& NZ)", "Rest of World"), 
+       text.col = c("darkgreen", "firebrick4", "slateblue", "deeppink",
+                    "goldenrod3", "black"), pch = 18,
+       col = c("darkgreen", "firebrick4", "steelblue3", "deeppink",
+               "goldenrod3", "black"),
+       bty = "n", cex = 10, y.intersp = 0.8, title = "Country", title.col = "black")
 
 dev.off()
 #### Functions ####
@@ -382,13 +371,13 @@ newmakeRegionColours <- function(realNames){
       colourVec[index] <- "firebrick4"
     } else if(grepl("Italy", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "aquamarine2" 
+      colourVec[index] <- "slateblue" 
     } else if(grepl("Spain", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "goldenrod3"
+      colourVec[index] <- "slateblue"
     } else if(grepl("France", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "royalblue4"
+      colourVec[index] <- "slateblue"
     } else if(grepl("Scotland", colourVec[index]) == TRUE){
       
       colourVec[index] <- "firebrick4"
@@ -400,37 +389,40 @@ newmakeRegionColours <- function(realNames){
       colourVec[index] <- "firebrick4"
     } else if(grepl("Germany", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "black"
+      colourVec[index] <- "slateblue"
     } else if(grepl("Netherlands", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "orangered"
+      colourVec[index] <- "slateblue"
     } else if(grepl("Czech", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "mediumblue"
+      colourVec[index] <- "slateblue"
     } else if(grepl("Greece", colourVec[index]) == TRUE){
       
       colourVec[index] <- "slateblue"
     } else if(grepl("Norway", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "purple"
+      colourVec[index] <- "slateblue"
     }else if(grepl("Canada", colourVec[index]) == TRUE){
       
       colourVec[index] <- "deeppink"
     }else if(grepl("Australia", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "steelblue3"
+      colourVec[index] <- "goldenrod3"
     }else if(grepl("USA", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "red"
+      colourVec[index] <- "deeppink"
     }else if(grepl("Argentina", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "lightblue"
+      colourVec[index] <- "black"
     }else if(grepl("India", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "lightgreen"
+      colourVec[index] <- "black"
     }else if(grepl("Venezuela", colourVec[index]) == TRUE){
       
-      colourVec[index] <- "yellow"
+      colourVec[index] <- "black"
+    }else if(grepl("New Zealand", colourVec[index]) == TRUE){
+      
+      colourVec[index] <- "goldenrod3"
     } else {
       
       colourVec[index] <- "darkgreen"
