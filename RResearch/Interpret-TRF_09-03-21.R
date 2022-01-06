@@ -2,7 +2,7 @@ library(Biostrings)
 library(DECIPHER)
 
 location = "C:/Users/UCD/Desktop/UbuntuSharedFolder/ResultsTRF/"
-pathMeta <- "C:/Users/UCD/Documents/Lab/CVRL MAP/ForComparisonMetaApr2021Format.csv"
+pathMeta <- "C:/Users/UCD/Documents/Lab/CVRL MAP/ForComparisonMetaSep2021Format.csv"
 
 # Script to parse TRF output and write results to file
 files <- list.files(path = location, pattern = "\\.dat$")
@@ -60,7 +60,7 @@ metaTable <- read.table(pathMeta,
                            check.names=FALSE)
 
 # Check real vs computed VNTR
-comparison <- compareVNTRs(resultFrame, metaTable, 171)
+comparison <- compareVNTRs(resultFrame, metaTable, 196)
   
 
 # Function that rounds up at .5

@@ -14,53 +14,41 @@ csqTable <- read.table(path,
                        quote = "") # Names left as they are, no dots inserted
 
 # Remove the empty bogey column
-csqTable <- csqTable[,-length(colnames(csqTable))]
+relevantCsqs <- csqTable[,-length(colnames(csqTable))]
 
-# Get rid of shared consequences between ancestor
-relevantCsqs <- ridShared2171Csqs(csqTable)
 
-# 16-2171 column can now be removed as it's empty
-relevantCsqs <- relevantCsqs[,-length(colnames(relevantCsqs))]
-
-# Remove any rows full of NAs
-onlyRelevantCsqs <- relevantCsqs[-which(is.na(relevantCsqs$`CITP-MAP_csq.vcf`) &
-                                      is.na(relevantCsqs$ERR037990_csq.vcf) &
-                                      is.na(relevantCsqs$ERR037985_csq.vcf) &
-                                      is.na(relevantCsqs$`CIT-MAP_csq.vcf`)), ]
+# Check if any rows full of NAs
+rowstorem = which(rowSums(is.na(relevantCsqs)) == (ncol(relevantCsqs)-1))
 
 # Get the consequence frequencies including fails
-csqFreqsWithFails <- findCsqFreqs(onlyRelevantCsqs, FALSE)
+csqFreqsWithFails <- findCsqFreqs(relevantCsqs, FALSE)
 
 # Get the consequence freqs excluding fails
-csqFreqsNoFails <- findCsqFreqs(onlyRelevantCsqs, TRUE)
+csqFreqsNoFails <- findCsqFreqs(relevantCsqs, TRUE)
 
 # Get unique consequences
-uniqueCsqs <- findCommonCsqs(onlyRelevantCsqs, 3)
+uniqueCsqs <- findCommonCsqs(relevantCsqs, (ncol(relevantCsqs)-2))
 
 # Get consequences shared across only 2 isolates
-twoSharedCsqs <- findCommonCsqs(onlyRelevantCsqs, 2)
+twoSharedCsqs <- findCommonCsqs(relevantCsqs, (ncol(relevantCsqs)-3))
 
 
 # Remove rows that are full of NAs
-justUniqueCsqs <- uniqueCsqs[-which(is.na(uniqueCsqs$`CITP-MAP_csq.vcf`) &
-                              is.na(uniqueCsqs$ERR037990_csq.vcf) &
-                              is.na(uniqueCsqs$ERR037985_csq.vcf) &
-                              is.na(uniqueCsqs$`CIT-MAP_csq.vcf`)), ]
+urowstorem = which(rowSums(is.na(uniqueCsqs)) == (ncol(uniqueCsqs)-1))
+justUniqueCsqs <- uniqueCsqs[-urowstorem, ]
 
-justTwoSharedCsqs <- twoSharedCsqs[-which(is.na(twoSharedCsqs$`CITP-MAP_csq.vcf`) &
-                                    is.na(twoSharedCsqs$ERR037990_csq.vcf) &
-                                    is.na(twoSharedCsqs$ERR037985_csq.vcf) &
-                                    is.na(twoSharedCsqs$`CIT-MAP_csq.vcf`)), ]
+trowstorem = which(rowSums(is.na(twoSharedCsqs)) == (ncol(twoSharedCsqs)-1))
+justTwoSharedCsqs <- twoSharedCsqs[-trowstorem, ]
 
 # Get those that are only unique to CIT and CITP
-justCITUniques <- justUniqueCsqs[,-c(3,5)]
+justCITUniques <- justUniqueCsqs[,-c(2,5,6,7)]
 
 # Remove any NA only rows
 justCITUniques <- justCITUniques[-which(is.na(justCITUniques$`CIT-MAP_csq.vcf`) &
                                   is.na(justCITUniques$`CITP-MAP_csq.vcf`)),]
 
 # Get those that are shared only by CIT and CITP but not the Bryant stuff
-justCITShared <- justTwoSharedCsqs[,-c(3,5)]
+justCITShared <- justTwoSharedCsqs[,-c(2,5,6,7)]
 
 # Remove NAs 
 justCITShared <- justCITShared[-which(is.na(justCITShared$`CIT-MAP_csq.vcf`) &
@@ -82,19 +70,29 @@ CITPropsNoFails <- convertToProp(CITFreqsNoFails)
 # Plot barplot to show overlap of overall consequences and selected consequences
 x=barplot(as.numeric(csqPropsNoFails[1:10,4]), col = "red", 
         ylab = "Proportion (%)", names.arg = csqPropsNoFails[1:10,1], las = 2, 
-        cex.names = 0.6, main = "Proportions of SNP Consequences for CIT", xaxt = "n")
-barplot(as.numeric(CITPropsNoFails[1:10,3]), col = alpha("blue", 0.5),
-        add = T, yaxt = "n")
+        cex.names = 0.6, main = "Proportions of Consequences for CIT", xaxt = "n")
+
 
 # Add legend
-legend("topright", legend = c("Differences from Ancestor 16-2171 (out of 154)",
-                           "Differences from Closest Node (out of 19)"),
-       text.col = c("Red", alpha("Blue", 0.5)),
+legend("topright", legend = "Differences from K10 (out of 333)",
+       text.col = "red",
        bty = "n", cex = 0.8)
 
 # Add slanted labels
 text(x[,1], -0.7, srt = 45, adj= 1, 
      xpd = TRUE, labels = csqPropsNoFails[1:10,1] , cex=0.8)
+
+x=barplot(as.numeric(CITPropsWithFails[1:10,3]), col = alpha("blue", 0.8),ylab = "Proportion (%)",names.arg = CITPropsWithFails[1:10,1]
+        , las=2, cex.names = 0.6, main = "Proportions of Consequences for CIT", xaxt = "n")
+
+# Add legend
+legend("topright", legend = "Differences from Nearest Node (out of 20*)",
+       text.col = "blue",
+       bty = "n", cex = 0.8)
+
+# Add slanted labels
+text(x[,1], -0.7, srt = 45, adj= 1, 
+     xpd = TRUE, labels = CITPropsWithFails[1:10,1] , cex=0.8)
 
 # Write things to files
 write.xlsx(mergedCITFrame, "MergedCITLenient.xlsx")
@@ -225,26 +223,3 @@ convertToProp <- function(freqtable){
   return(propTable)
 }
 
-# Function to get rid of shared consequences between isolates and 16-2171 ancestor
-ridShared2171Csqs <- function(csqTable){
-  
-  # Create a data frame to store results using same col and row names from before
-  namesOfRows <- csqTable[,1]
-  namesOfCols <- colnames(csqTable)
-  filteredFrame <- data.frame(matrix(nrow = length(namesOfRows), 
-                                     ncol = length(namesOfCols)))
-  names(filteredFrame) <- namesOfCols
-  filteredFrame[,1] <- namesOfRows
-  
-  # Loop thru each row of the ancestral isolate and store if nothing in ancestral
-  for(row in 1:length(csqTable$`16-2171_csq.vcf`)){
-    
-    if(is.na(csqTable$`16-2171_csq.vcf`[row]) == TRUE){
-      
-      # Add row into the filtered df
-      filteredFrame[row,] <- csqTable[row,]
-    }
-  }
-  
-  return(filteredFrame)
-}

@@ -4,11 +4,16 @@
 library(ape)
 library(phytools)
 library(scales)
+library(adegenet)
 
 # Set path variables
 pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaMay2021Format.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
 pathC10Tree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Cork10Fastqs/C10genie/RAxML_bipartitions.RaxML-R_01-06-21"
+pathTyrTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/SnipGenieTyr/RAxML_bipartitions.Tyr"
+pathNI <- "C:/Users/UCD/Documents/Lab/CVRL MAP/NIMetaOct2020.csv"
+
+
 
 # Read in table of bryant isolates
 isoBryantTable <- read.table(pathBryantIso,
@@ -23,6 +28,12 @@ isoCVRLTable <- read.table(pathNewIso,
                            sep = ",",
                            stringsAsFactors=FALSE, 
                            check.names=FALSE)
+# Read in table of NI isolates
+isoNITable <- read.table(pathNI,
+                         header = TRUE,
+                         sep = ",",
+                         stringsAsFactors=FALSE, 
+                         check.names=FALSE)
 
 
 # Vector with all county names for the map
@@ -38,9 +49,11 @@ shortCounties <- c("AnNI", "ArNI", "CW", "CN", "CE", "C", "DL", "DoNI", "D", "FN
 
 # Read in tree
 c10Tree <- read.tree(pathC10Tree)
+tyrTree <- read.tree(pathTyrTree)
 
 # Re-root
 c10reRoot <- root(c10Tree, node = 105)
+tyrReroot <- root(tyrTree, node = 48)
 
 # Get the Bryant names
 c10realNames <- altinputgetBryantLabels(isoBryantTable, c10reRoot)
@@ -50,24 +63,32 @@ c10reRoot$tip.label <- c10realNames
 
 # Get metadata for CVRL isolates
 c10realNames <- altgetCVRLLabels(isoCVRLTable, c10reRoot)
+tyrReals <- altgetCVRLLabels(isoCVRLTable, tyrReroot)
 
 # Update the names in the tree
 c10reRoot$tip.label <- c10realNames
+tyrReroot$tip.label <- tyrReals
+
+# Get NI meta
+tyrReals <- getNILabels(isoNITable, tyrReroot)
+tyrReroot$tip.label <- tyrReals
 
 #Get rid of non-relevant tips
-#dropem <- c(17,19,20,95,96,135,136,183,184)
-#onlytree <- drop.tip(irishOnlytree, dropem)
+c10reRoot <- drop.tip(c10reRoot, tip = 5)
+tyrReroot <- drop.tip(tyrReroot, tip = 2)
 
 # Convert branch lengths to SNP values
-#onlytree$edge.length <- round(onlytree$edge.length * 7843)
 c10reRoot$edge.length <- round(c10reRoot$edge.length * 135)
+tyrReroot$edge.length <- round(tyrReroot$edge.length * 103)
 
 # Find the distances between all isolates
 #allDist <- cophenetic(onlytree)
 c10Dist <- cophenetic(c10reRoot)
+tyrDist <- cophenetic(tyrReroot)
 
 # Round the distances
 c10Dist <- round(c10Dist)
+tyrDist <- round(tyrDist)
 
 # Remove unecessary zeroes by filling with NA
 for(index in 1:nrow(c10Dist)){
@@ -75,59 +96,52 @@ for(index in 1:nrow(c10Dist)){
   c10Dist[index, index] <- NA
 }
 
+for(index in 1:nrow(tyrDist)){
+  
+  tyrDist[index, index] <- NA
+}
+
 # Get the herd names
 c10herdNames <- getNames(c10Dist, "Herd")
+tyrherdNames <- getNames(tyrDist, "Herd")
 
 # Get current county, birth county names and sameness
 c10countyNames <- getNames(c10Dist, "CCounty")
 c10birthcountyNames <- getNames(c10Dist, "BCounty")
 c10sameness <- getNames(c10Dist, "Same")
 
+tyrcountyNames <- getNames(tyrDist, "CCounty")
+tyrbirthcountyNames <- getNames(tyrDist, "BCounty")
+tyrsameness <- getNames(tyrDist, "Same")
+
+
 # Get VNTR names
 c10vntrNames <- getNames(c10Dist, "VNTR")
+tyrvntrNames <- getNames(tyrDist, "VNTR")
 
 # Make VNTR colours
 c10vntrTips <- makeVNTRCols(c10vntrNames)
+tyrvntrTips <- makeVNTRCols(tyrvntrNames)
+
 
 # Simplify the labels
 c10simpleMat <- altdeconstructLabels(c10reRoot$tip.label, counties, shortCounties)
+tyrsimpleMat <- altdeconstructLabels(tyrReroot$tip.label, counties, shortCounties)
+
 
 # Assign simple labels
 c10reRoot$tip.label <- c10simpleMat[1,]
-
-#### Tree plotting (.png) ####
-
-# Save plot as .png file (Ireland)
-outputFile <- paste("VNTR_Tree_10-05-21.png", sep="")
-png(outputFile, height=10000, width=6000)
-
-# Plot VNTR tree
-plot.phylo(onlytree, edge.width = 11, font = 1, label.offset = 0.2, 
-           tip.color = vntrTips,
-           align.tip.label = FALSE, type="phylogram", cex = 5, no.margin = TRUE)
-nodelabels(text= c("A","B","C","D","E","F","G","H"), node = c(317,285,267,259,249,222,213,199), frame = "n", cex=15, adj = c(1,1), col = "red")
-
-
-# Add the SNP scale
-add.scale.bar(x=10, y = 5, cex = 8, lwd = 15)
-text(x=40, y =5, cex = 8, "SNPs")
-
-# Add a legend
-legend(x=9, y=160, legend = c("(42332228) - 1", "(32332228) - 2", "(32332218) - 3", "(22332228) - 13", "(41332228) - 116"), 
-       text.col = c("red", "deepskyblue3", "darkorange3", "black", "darkgreen"), 
-       bty = "n", cex = 10, y.intersp = 0.8, title = "INMV Types", title.col = "black")
-
-dev.off()
+tyrReroot$tip.label <- tyrsimpleMat[1,]
 
 #### Tree plotting (.pdf) ####
 
 # Save plot as .pdf file (Ireland)
-outputFile <- paste("C10_Tree_02-06-21.pdf", sep="")
+outputFile <- paste("C10_Tree_07-10-21.pdf", sep="")
 pdf(outputFile, height=50, width=50)
 
 # Plot VNTR tree
 plot.phylo(c10reRoot, edge.width = 17, font = 2, label.offset = 0.5, tip.color = c10vntrTips,
-           align.tip.label = TRUE, type="phylogram", cex = 3.5, no.margin = TRUE)
+           align.tip.label = FALSE, type="phylogram", cex = 3.5, no.margin = TRUE)
 
 tiplabels(pch = 18, frame = "n", col = c10simpleMat[2,], cex=10)
 # Add the SNP scale
@@ -147,6 +161,127 @@ legend(x=2, y=75, legend = c("2014", "2016", "2017", "2018", "2019"),
        bty = "n", cex = 10, y.intersp = 0.8, title = "Isolation Year", title.col = "black")
 
 dev.off()
+
+outputFile <- paste("Tyr_Tree_07-10-21.pdf", sep="")
+pdf(outputFile, height=50, width=50)
+
+# Plot VNTR tree
+plot.phylo(tyrReroot, edge.width = 17, font = 2, label.offset = 0.5, tip.color = tyrvntrTips,
+           align.tip.label = FALSE, type="phylogram", cex = 3.5, no.margin = TRUE)
+
+tiplabels(pch = 18, frame = "n", col = tyrsimpleMat[2,], cex=10)
+# Add the SNP scale
+add.scale.bar(x=11, y = 1, cex = 7, lwd = 14)
+text(x=17.5,y=1, cex = 7, "SNPs")
+
+
+
+# Add a legend
+legend(x=14, y=35, legend = c("(42332228) - 1", "(32332228) - 2", "(22332228) - 13", "(41332228) - 116"), 
+       text.col = c("red", "deepskyblue3", "black", "darkgreen"), 
+       bty = "n", cex = 9, y.intersp = 0.8, title = "INMV Types", title.col = "black")
+legend(x=15, y=25, legend = c("2013","2014", "2016", "2017", "2019"), 
+       text.col = c("red", "goldenrod3", "steelblue3", "palegreen3", "orchid"),
+       pch = c(23,23,23,23,23), pt.bg = c("red","goldenrod3",  "steelblue3", "palegreen3", "orchid"), pt.cex = 13,
+       bty = "n", cex = 9, y.intersp = 0.8, title = "Isolation Year", title.col = "black")
+
+dev.off()
+
+#### Check VNTR clustering ####
+
+# Assign scottish VNTRs (both are 1)
+c10vntrNames[1] <- 1
+c10vntrNames[99] <- 1
+
+distList <- getWithinBetween(c10Dist, c10vntrNames, FALSE)
+tyrdistList <- getWithinBetween(tyrDist,tyrvntrNames, FALSE)
+
+# Get the difference of the means
+diffWB <- median(distList$Between) - median(distList$Within)
+tyrdiffWB <- median(tyrdistList$Between) - median(tyrdistList$Within)
+
+# Plot a boxplot comparing within and between
+boxplot(distList$Within, distList$Between, tyrdistList$Within, tyrdistList$Between, 
+        main = "SNP distances within & between VNTR types", 
+        names = c("Within C10", "Between C10", "Within Tyr", "Between Tyr"),
+        ylab = "SNP Difference")
+stripchart(distList$Within, add = TRUE, at =1, 
+           method = "jitter", vertical = TRUE, col = alpha("lightblue",0.4),
+           pch = 4)
+stripchart(distList$Between, add = TRUE, at =2, 
+           method = "jitter", vertical = TRUE, col = alpha("lightgreen",0.4),
+           pch = 4)
+stripchart(tyrdistList$Within, add = TRUE, at =3, 
+           method = "jitter", vertical = TRUE, col = alpha("lightblue",0.4),
+           pch = 4)
+stripchart(tyrdistList$Between, add = TRUE, at =4, 
+           method = "jitter", vertical = TRUE, col = alpha("lightgreen",0.4),
+           pch = 4)
+
+
+range(c10Dist[which(c10vntrNames == 1),which(c10vntrNames == 1)], na.rm=T)
+range(c10Dist[which(c10vntrNames == 2),which(c10vntrNames == 2)], na.rm=T)
+median(c10Dist[which(c10vntrNames == 1),which(c10vntrNames == 1)], na.rm=T)
+median(c10Dist[which(c10vntrNames == 2),which(c10vntrNames == 2)], na.rm=T)
+range(tyrDist[which(tyrvntrNames == 1),which(tyrvntrNames == 1)], na.rm=T)
+range(tyrDist[which(tyrvntrNames == 2),which(tyrvntrNames == 2)], na.rm=T)
+median(tyrDist[which(tyrvntrNames == 1),which(tyrvntrNames == 1)], na.rm=T)
+median(tyrDist[which(tyrvntrNames == 2),which(tyrvntrNames == 2)], na.rm=T)
+
+# Create an empty vector
+medianVector <- rep(NA, 10000)
+
+# Do the same except this time shuffle 10k times
+for(run in 1:10000){
+  distRunnerList <- getWithinBetween(c10Dist, c10vntrNames, TRUE)
+  
+  # Get the difference of the means
+  medianVector[run] <- mean(distRunnerList$Between) - mean(distRunnerList$Within) 
+  
+}
+
+# Plot as histogram
+xmin <- min(medianVector, diffWB)
+xmax <- max(medianVector, diffWB)
+
+quantiles <- quantile(medianVector, c(0.025, 0.975))
+
+h <- hist(medianVector, breaks=30, plot=FALSE)
+
+cuts <- cut(h$breaks, c(-Inf, quantiles[1], quantiles[2], Inf))
+
+plot(h, col=c("red", "white", "red")[cuts], xlab="Difference",
+     main="Distribution of differences between means C10", xlim=c(xmin, 25), cex.axis=0.8, las=1)
+lines(c(diffWB,diffWB), c(0, max(h$counts)), col="blue", lwd=3)
+text(20, 750, cex = 0.9,
+     paste("Actual Value\n= ", round(diffWB, digits=2)), col="blue")
+
+tmedianVector <- rep(NA, 10000)
+
+# Do the same except this time shuffle 10k times
+for(run in 1:10000){
+  tdistRunnerList <- getWithinBetween(tyrDist, tyrvntrNames, TRUE)
+  
+  # Get the difference of the means
+  tmedianVector[run] <- mean(tdistRunnerList$Between) - mean(tdistRunnerList$Within) 
+  
+}
+
+# Plot as histogram
+xmin <- min(tmedianVector, tyrdiffWB)
+xmax <- max(tmedianVector, tyrdiffWB)
+
+tquantiles <- quantile(tmedianVector, c(0.025, 0.975))
+
+th <- hist(tmedianVector, breaks=30, plot=FALSE)
+
+tcuts <- cut(th$breaks, c(-Inf, tquantiles[1], tquantiles[2], Inf))
+
+plot(th, col=c("red", "white", "red")[cuts], xlab="Difference",
+     main="Distribution of differences between means Tyr CaA", xlim=c(xmin, 25), cex.axis=0.8, las=1)
+lines(c(tyrdiffWB,tyrdiffWB), c(0, max(th$counts)), col="blue", lwd=3)
+text(20, 750, cex = 0.9,
+     paste("Actual Value\n= ", round(tyrdiffWB, digits=2)), col="blue")
 
 #### Functions ####
 
@@ -406,3 +541,98 @@ altdeconstructLabels <- function(tiplabel, counties, shortCounties){
   return(outmat)
 }
 
+#Function to get labels for NI isolates
+getNILabels <- function(isoTable, TheTree){
+  
+  # Create a vector to match the tip labels vector in the tree
+  nameVector <- TheTree$tip.label
+  
+  # Loop thru the table
+  for(row in 1:nrow(isoTable)){
+    
+    # Loop thru the name vector
+    for(index in 1:length(nameVector)){
+      
+      # Check if the current accession is present in the big table
+      if(isoTable[row,"SeqRef"] == nameVector[index]){
+        
+        county <- strsplit(isoTable[row,"Herd Ref"], split = " ")[[1]][1]
+        herd <- strsplit(isoTable[row,"Herd Ref"], split = " ")[[1]][2]
+        
+        newname <- paste(isoTable[row,"AliquotFormat"], "_", county, "_", herd, "_",
+                         isoTable[row,"INMV"], "_", isoTable[row, "Birth County"], "_", isoTable[row, "Herd of Birth"])
+        nameVector[index] <- newname
+      }else{
+        
+        next
+      }
+      
+    }
+    
+  }
+  nameVector <- gsub(" ", "", nameVector, fixed = TRUE)
+  
+  return(nameVector)
+  
+}
+
+# Function to pull out within and between SNP distances
+getWithinBetween <- function(mat, name, shuffle){
+  
+  if(shuffle == TRUE){
+    
+    shuffler <- sample(name, replace = FALSE) 
+  } else {
+    
+    shuffler <- name
+  }
+  
+  # Create list to store info in
+  withinBetween <- list()
+  
+  # Create keys
+  keys <- c("CellLabel", "Within", "Between")
+  
+  # Loop thru rows of input matrix
+  for(row in 1:nrow(mat)){
+    
+    # Loop thru columns
+    for(col in 1:ncol(mat)){
+      
+      # Check if value present in cell
+      if(is.na(mat[row,col]) == TRUE){
+        
+        next
+      } else {
+        
+        # Are they the same VNTR
+        if(shuffler[row] == shuffler[col]){
+          
+          # Get the cell and status
+          status <- paste(row, col, "Within", sep = "_")
+          
+          # Store cell location and status
+          withinBetween[[keys[1]]] <- append(withinBetween[[keys[1]]], status)
+          
+          # Store distance value
+          withinBetween[[keys[2]]] <- append(withinBetween[[keys[2]]], mat[row,col])
+          
+        }else{
+          
+          # Get the cell and status
+          status <- paste(row, col, "Between", sep = "_")
+          
+          # Store cell location and status
+          withinBetween[[keys[1]]] <- append(withinBetween[[keys[1]]], status)
+          
+          # Store distance value
+          withinBetween[[keys[3]]] <- append(withinBetween[[keys[3]]], mat[row,col])
+        }
+        
+      }
+      
+    }
+    
+  }
+  return(withinBetween)        
+}

@@ -6,9 +6,10 @@
 library(ape)
 library(phytools)
 library(scales)
+library(ggplot2)
 
 # Set path variables
-pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaOct2020Format.csv"
+pathNewIso <- "C:/Users/UCD/Documents/Lab/CVRL MAP/MetaMay2021Format.csv"
 pathBryantIso <- "C:/Users/UCD/Documents/Papers/Bryant 2016 Table S1.csv"
 pathTree <- "C:/Users/UCD/Desktop/UbuntuSharedFolder/Winter2018MAPSequencing/MAP-FASTQs/vcfFiles/Bryantandus/RAxML_bipartitions.RaxML-R_04-03-21"
 pathNI <- "C:/Users/UCD/Documents/Lab/CVRL MAP/NIMetaOct2020.csv"
@@ -57,6 +58,30 @@ realNames <- getBryantLabels(isoBryantTable, reRoot)
 
 # Update the names in the tree
 reRoot$tip.label <- realNames
+
+# Get breed info and DTP info
+breeds <- getIsoInfo(isoCVRLTable, reRoot, "Breed")
+dtp <- getIsoInfo(isoCVRLTable, reRoot, "DTPos")
+
+# Remove unknown breeds
+unknowns <- c(which(breeds == "Unknown"), which(breeds == "Not available")) 
+breeds <- breeds[-unknowns]
+dtp <- dtp[-unknowns]
+
+# Get shedding
+shedding <- getShedding(dtp)
+
+# plot barplot of breeds
+x=barplot(sort(table(breeds)), main = "Breeds of Infected Cattle", xaxt = "n", ylab = "Frequency")
+
+text(x[,1], -0.7, srt = 45, adj= 1, 
+     xpd = TRUE, labels = names(sort(table(breeds))) , cex=0.7)
+# plot barplot of breeds & dtp together
+together = ggplot(NULL,
+       aes(x = breeds, 
+           fill = shedding)) + 
+  geom_bar(position = position_dodge(preserve = "single"))
+together +theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 
 # Get metadata for CVRL isolates
 realNames <- getCVRLLabels(isoCVRLTable, reRoot)
@@ -871,5 +896,63 @@ getWithinBetween <- function(mat, name, shuffle){
     
   }
   return(withinBetween)        
-} 
+}
+
+# Function to retrieve info based on isolates in the tree
+getIsoInfo <- function(isoTable, TheTree, infocol){
+  
+  # Create a vector to match the tip labels vector in the tree
+  nameVector <- TheTree$tip.label
+  
+  outvector <- c()
+  
+  # Loop thru the table
+  for(row in 1:nrow(isoTable)){
+    
+    # Loop thru the name vector
+    for(index in 1:length(nameVector)){
+      
+      # Check if the current accession is present in the big table
+      if(isoTable[row,"AliquotFormat"] == nameVector[index]){
+        
+        outvector <- append(outvector, isoTable[row, infocol])
+      }else{
+        
+        next
+      }
+      
+    }
+    
+  }
+  
+  return(outvector)
+}
+
+# Function to determine shedding status
+getShedding <- function(shedvector){
+  
+  outvector <- shedvector
+  
+  for(index in 1:length(shedvector)){
+    
+    if(shedvector[index] == "TZN" || shedvector[index] == "check"){
+      
+      outvector[index] <- "Low"
+    } else{
+      
+      numshed <- as.numeric(shedvector[index])
+      
+      if(numshed <= 22){
+        
+        outvector[index] <- "High"
+      } else if(numshed > 22 && numshed <= 31){
+        
+        outvector[index] <- "Moderate"
+      } else{
+        outvector[index] <- "Low"
+      }
+    }
+  }
+  return(outvector)
+}
 
